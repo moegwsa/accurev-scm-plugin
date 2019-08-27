@@ -1,0 +1,9 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler"
+         xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson"
+         xmlns:f="/lib/form" xmlns:i="jelly:fmt"
+>
+    <t:summary icon="/plugin/accurev/icons/accurev-48x48.png">
+        <b>${%Transaction}</b> ${it.lastBuild.transaction.id} : ${it.lastBuild.comment}
+    </t:summary>
+</j:jelly>

@@ -1,0 +1,19 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout title="Accurev">
+        <j:set var="build" value="${it.owningRun}"/>
+        <j:if test="${build!=null}">
+            <st:include page="sidepanel" it="${build}" optional="true"/>
+        </j:if>
+        <l:main-panel>
+            <h1>${%Accurev Build Data}</h1>
+            <ul><li><b>Built stream:</b> ${it.lastBuild.marked.name} - <b>Built up to transaction:</b> ${it.lastBuild.transaction.id}</li></ul>
+            <h1>Updates</h1>
+            <ul>
+                <j:forEach var="update" items="${it.lastBuild.updatesSincePrevBuild}">
+                    <li>Transaction number: ${update.id} - Stream name: ${update.stream}- Type: ${update.type}</li>
+                </j:forEach>
+            </ul>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

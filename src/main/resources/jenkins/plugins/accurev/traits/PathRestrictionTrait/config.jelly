@@ -1,0 +1,12 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler">
+
+<f:entry title="${%Included files}" field="included">
+      <f:textarea/>
+    </f:entry>
+
+ <f:entry title="${%Excluded files}" field="excluded">
+      <f:textarea/>
+    </f:entry>
+
+</j:jelly>
