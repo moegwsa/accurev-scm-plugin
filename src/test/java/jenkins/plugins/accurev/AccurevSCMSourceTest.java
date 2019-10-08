@@ -63,7 +63,7 @@ public class AccurevSCMSourceTest {
         return owner;
     }
 
-    private interface AccurevSCMSourceOwner extends TopLevelItem, SCMSourceOwner {
+    public interface AccurevSCMSourceOwner extends TopLevelItem, SCMSourceOwner {
     }
 
     @TestExtension

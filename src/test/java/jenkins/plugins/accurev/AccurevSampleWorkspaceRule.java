@@ -15,6 +15,7 @@ public final class AccurevSampleWorkspaceRule extends AbstractSampleDVCSRepoRule
 
     @Override
     public void init() throws Exception {
+        System.err.println("Test");
         run(true,tmp.getRoot(), "accurev", "info");
         System.out.println(tmp.getRoot());
     }
@@ -69,7 +70,7 @@ public final class AccurevSampleWorkspaceRule extends AbstractSampleDVCSRepoRule
         synchronousPolling(rule);
         WebResponse webResponse = rule.createWebClient().goTo("accurev/notifyCommit?host=" + host + "&port=" + port + "&depot=" + depot + "&streams=" + depot + "&transaction=1", "text/plain").getWebResponse();
         // Since it takes some time to parse the request and add it to the queue, we wait for 1 sec.
-        Thread.sleep(1000);
+        Thread.sleep(10000);
         rule.waitUntilNoActivity();
     }
 

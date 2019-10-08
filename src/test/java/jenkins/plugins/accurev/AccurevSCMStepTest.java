@@ -101,7 +101,7 @@ public class AccurevSCMStepTest {
         assertTrue(b.getArtifactManager().root().child("nextfile").isFile());
     }
 
-    @Test
+    @Test @Ignore
     public void changelogAndPolling() throws Exception {
         WorkflowJob p = rule.jenkins.createProject(WorkflowJob.class, "demo");
         IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");

@@ -294,8 +294,6 @@ public class AccurevSCM extends SCM implements Serializable {
 
     @Override
     public void buildEnvironment(@Nonnull Run<?, ?> build, @Nonnull Map<String, String> env) {
-        super.buildEnvironment(build, env);
-
         env.put(ACCUREV_STREAM, getStreams().get(0).getName());
     }
 

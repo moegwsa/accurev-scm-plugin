@@ -134,13 +134,17 @@ public class IntegrationTest {
         trigger.start(project, true);
         project.setQuietPeriod(0);
         
-        rule.jenkins.setCrumbIssuer(new DefaultCrumbIssuer(false));
+        //rule.jenkins.setCrumbIssuer(new DefaultCrumbIssuer(false));
+        rule.jenkins.disableSecurity();
+        //System.setProperty("hudson.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID", "true");
+        System.err.println(rule.jenkins.isUseCrumbs());
         attachPromoteTrigger(depot);
         sampleWorkspace.commit("Test", sampleWorkspace.username, "Initial promote");
 
 
 
-        Thread.sleep(2500);
+        Thread.sleep(2000);
+        String t = getTriggerLog();
         assertEquals(1, project.getLastBuild().number);
     }
 
@@ -181,6 +185,8 @@ public class IntegrationTest {
 
     @Test
     public void fullTripTest() throws Exception {
+
+
         // Initialize workspace
         sampleWorkspace.init("localhost", "5050", "accurev_user", "docker");
         // Creates depot and stream
@@ -224,8 +230,10 @@ public class IntegrationTest {
         // assertEquals(type AccurevSCM)
 
         // Set crumb
-        rule.jenkins.setCrumbIssuer(new DefaultCrumbIssuer(false));
-
+        //rule.jenkins.setCrumbIssuer(new DefaultCrumbIssuer(false));
+        rule.jenkins.disableSecurity();
+        rule.jenkins.save();
+        System.err.println(rule.jenkins.isUseCrumbs());
         // Set quiet period to 0, so we build once we get triggered
         project.setQuietPeriod(0);
         // Get the port from the JenkinsRule - When JenkinsRule runs it starts Jenkins at a random port
@@ -236,7 +244,8 @@ public class IntegrationTest {
 
         // We need to give Accurev a chance to parse the newly committed file and issue a trigger
         Thread.sleep(2000);
-        assertTrue(getTriggerLog().contains("server_post_promote triggered"));
+        String t = getTriggerLog();
+        assertTrue(t.contains("server_post_promote triggered"));
         // Check we received a webhook and built the job
         assertEquals(2, project.getLastBuild().number);
 

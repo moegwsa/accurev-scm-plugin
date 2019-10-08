@@ -1,7 +1,9 @@
 package hudson.plugins.accurev;
 
 import hudson.plugins.accurev.util.DefaultBuildChooser;
+import org.junit.Rule;
 import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +17,8 @@ public class AccurevSCMUnitTest {
 
     private final String accurevDir = ".";
     private final AccurevSCM accurevSCM = new AccurevSCM(accurevDir);
+    @Rule
+    public JenkinsRule jenkins = new JenkinsRule();
 
     @Test
     public void testCreateDepotList() {

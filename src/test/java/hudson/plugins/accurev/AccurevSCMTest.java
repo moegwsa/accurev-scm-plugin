@@ -28,8 +28,8 @@ public class AccurevSCMTest {
     @Rule
     public JenkinsRule rule = new JenkinsRule();
 
-    @ClassRule
-    public static DockerComposeRule docker = DockerComposeRule.builder()
+    @Rule
+    public DockerComposeRule docker = DockerComposeRule.builder()
             .file("src/docker/docker-compose.yml")
             .build();
 
@@ -42,7 +42,9 @@ public class AccurevSCMTest {
 
     @Before
     public void setUp() throws Exception {
+        System.err.println("Starting set up");
         listener = StreamTaskListener.fromStderr();
+        System.err.println("initializing workspace");
         sampleWorkspace.init(host, port, username, password);
     }
 
@@ -59,21 +61,25 @@ public class AccurevSCMTest {
 
         final String commitFile1 = "commitFile1";
         commit(commitFile1, username, commitFile1);
-
+        System.err.println("Commited first file");
         final FreeStyleBuild build = project.scheduleBuild2(0).get();
-        System.out.println(build.getLog());
+        System.err.println("Created freestyle build");
         rule.assertBuildStatus(Result.SUCCESS, build);
         assertFalse("scm polling should not detect any more changes after build", project.poll(listener).hasChanges());
-
+        System.err.println("Build status asserted, true");
         final String commitFile2 = "commitFile2";
         commit(commitFile2, username, commitFile2);
+        System.err.println("Commit second file");
         assertTrue("scm polling did not detect commit2 change", project.poll(listener).hasChanges());
-
+        System.err.println("no pulling detected");
         final FreeStyleBuild build2 = project.scheduleBuild2(0).get();
+        System.err.println("Create second build");
         final Set<User> culprits = build2.getCulprits();
+        System.err.println("Get culprits");
         assertEquals("The build should have only one culprit", 1, culprits.size());
         assertEquals("", username, culprits.iterator().next().getFullName());
         assertTrue(build2.getWorkspace().child(commitFile2).exists());
+        System.err.println("Assert culprits, username and file exists true");
         rule.assertBuildStatusSuccess(build2);
         assertFalse("scm polling should not detect any more changes after build", project.poll(listener).hasChanges());
     }
