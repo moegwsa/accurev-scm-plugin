@@ -1,0 +1,19 @@
+version: "3.7"
+services:
+  accurev:
+    image: wimill/accurev
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile-accurev
+    container_name: accurev
+    ports:
+      - "5050:5050"
+      - "8883:1883"
+    healthcheck:
+      test: ./accurev/bin/accurev info
+      interval: 10s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    environment:
+      - JENKINS_PORT=8081
