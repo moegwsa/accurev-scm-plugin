@@ -8,4 +8,13 @@ before_install:
   - docker pull wimill/accurev:latest
   - docker ps -a
 script:
-  - mvn test
+  - mvn clean package
+
+deploy:
+  provider: releases
+  api_key: $api_key
+  file:
+    - build/libs/accurev-client.hpi
+    - build/libs/accurev-client-plugin-1.0.0-SNAPSHOT-all.jar
+  skip_cleanup: true
+  draft: true
