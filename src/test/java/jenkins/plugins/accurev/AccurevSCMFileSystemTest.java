@@ -6,6 +6,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.palantir.docker.compose.DockerComposeRule;
+import hudson.plugins.accurev.util.AccurevTestExtensions;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.scm.api.SCMFile;
@@ -16,12 +17,14 @@ import org.hamcrest.Matchers;
 import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.TreeSet;
 
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 @Ignore
 public class AccurevSCMFileSystemTest {
@@ -51,6 +54,13 @@ public class AccurevSCMFileSystemTest {
         sampleWorkspace.init(host, port, username);
         sampleWorkspace.write("testFile", " ");
         //sampleWorkspace.accurev("add", "-c added testFile", "-x");
+    }
+
+    @BeforeClass
+    public static void testAccurevInstall() throws IOException, InterruptedException {
+        assumeTrue("Can only run test with proper test setup",
+                AccurevTestExtensions.checkCommandExist("accurev")
+        );
     }
 
     /** TODO: Have to find a way to test for content that isn't locally stored but has to be probed.

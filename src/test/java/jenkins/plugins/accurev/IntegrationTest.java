@@ -13,6 +13,7 @@ import hudson.model.*;
 import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.StreamSpec;
 import hudson.plugins.accurev.extensions.AccurevSCMExtension;
+import hudson.plugins.accurev.util.AccurevTestExtensions;
 import hudson.security.csrf.DefaultCrumbIssuer;
 import hudson.triggers.SCMTrigger;
 import hudson.util.OneShotEvent;
@@ -24,6 +25,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +52,7 @@ import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -66,6 +69,13 @@ public class IntegrationTest {
             .build();
 
     private String jenkinsPort;
+
+    @BeforeClass
+    public static void testAccurevInstall() throws IOException, InterruptedException {
+        assumeTrue("Can only run test with proper test setup",
+                AccurevTestExtensions.checkCommandExist("accurev")
+        );
+    }
 
     @Before
     public void setUp() throws IOException, InterruptedException {

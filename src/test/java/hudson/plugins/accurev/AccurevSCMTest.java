@@ -6,9 +6,12 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.palantir.docker.compose.DockerComposeRule;
 import hudson.model.*;
+import hudson.plugins.accurev.util.AccurevTestExtensions;
 import hudson.util.StreamTaskListener;
 import jenkins.plugins.accurev.AccurevSampleWorkspaceRule;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,6 +22,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class AccurevSCMTest {
 
@@ -39,6 +43,13 @@ public class AccurevSCMTest {
     private String password = "docker";
 
     protected TaskListener listener;
+
+    @BeforeClass
+    public static void testAccurevInstall() throws IOException, InterruptedException {
+        assumeTrue("Can only run test with proper test setup",
+                AccurevTestExtensions.checkCommandExist("accurev")
+        );
+    }
 
     @Before
     public void setUp() throws Exception {

@@ -6,6 +6,7 @@ import com.palantir.docker.compose.connection.Container;
 import com.palantir.docker.compose.connection.DockerMachine;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
+import hudson.plugins.accurev.util.AccurevTestExtensions;
 import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
@@ -15,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static org.junit.Assume.assumeTrue;
 
 @Ignore("Only used for testing Docker instance")
 public class DockerTest {
@@ -32,6 +35,13 @@ public class DockerTest {
     public DockerComposeRule docker = DockerComposeRule.builder()
             .file("src/docker/docker-compose.yml")
             .build();
+
+    @BeforeClass
+    public static void testAccurevInstall() throws IOException, InterruptedException {
+        assumeTrue("Can only run test with proper test setup",
+                AccurevTestExtensions.checkCommandExist("accurev")
+        );
+    }
 
     @Before
     public void setUp() throws IOException, InterruptedException {

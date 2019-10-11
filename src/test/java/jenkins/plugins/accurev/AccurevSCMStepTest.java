@@ -9,6 +9,7 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.palantir.docker.compose.DockerComposeRule;
 import hudson.model.Label;
 import hudson.model.queue.QueueTaskFuture;
+import hudson.plugins.accurev.util.AccurevTestExtensions;
 import hudson.scm.ChangeLogSet;
 import hudson.triggers.SCMTrigger;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -24,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class AccurevSCMStepTest {
 
@@ -43,6 +45,13 @@ public class AccurevSCMStepTest {
     String port = "5050";
     String user = "accurev_user";
     String pwd = "docker";
+
+    @BeforeClass
+    public static void testAccurevInstall() throws IOException, InterruptedException {
+        assumeTrue("Can only run test with proper test setup",
+                AccurevTestExtensions.checkCommandExist("accurev")
+        );
+    }
 
     @Before
     public void setupAccurevServer() throws Exception {
