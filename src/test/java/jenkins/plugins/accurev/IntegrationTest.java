@@ -151,8 +151,6 @@ public class IntegrationTest {
         attachPromoteTrigger(depot);
         sampleWorkspace.commit("Test", sampleWorkspace.username, "Initial promote");
 
-
-
         Thread.sleep(2000);
         String t = getTriggerLog();
         assertEquals(1, project.getLastBuild().number);
