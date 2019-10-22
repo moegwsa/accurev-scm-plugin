@@ -174,10 +174,15 @@
             <artifactId>ssh-credentials</artifactId>
             <version>1.17.1</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.github.WiMills</groupId>-->
+<!--            <artifactId>accurev-client-plugin</artifactId>-->
+<!--            <version>-7836485194-1</version>-->
+<!--        </dependency>-->
         <dependency>
-            <groupId>com.github.WiMills</groupId>
-            <artifactId>accurev-client-plugin</artifactId>
-            <version>-7836485194-1</version>
+            <groupId>io.jenkins.plugins.accurev</groupId>
+            <artifactId>accurev-client</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -214,11 +219,6 @@
             <artifactId>workflow-scm-step</artifactId>
             <version>2.9</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.jenkins.plugins.accurev</groupId>-->
-<!--            <artifactId>accurev-client</artifactId>-->
-<!--            <version>1.0.0-SNAPSHOT</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>

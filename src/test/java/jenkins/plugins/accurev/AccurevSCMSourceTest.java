@@ -30,8 +30,6 @@ public class AccurevSCMSourceTest {
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
 
-    @Rule
-    public AccurevSampleWorkspaceRule sampleWorkspace = new AccurevSampleWorkspaceRule();
 
     private AccurevStatus accurevStatus;
 

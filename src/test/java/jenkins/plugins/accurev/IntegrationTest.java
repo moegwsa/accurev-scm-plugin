@@ -17,6 +17,8 @@ import hudson.plugins.accurev.util.AccurevTestExtensions;
 import hudson.security.csrf.DefaultCrumbIssuer;
 import hudson.triggers.SCMTrigger;
 import hudson.util.OneShotEvent;
+import jenkins.plugins.accurevclient.AccurevClient;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -57,8 +59,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class IntegrationTest {
-    @Rule
-    public AccurevSampleWorkspaceRule sampleWorkspace = new AccurevSampleWorkspaceRule();
 
     @Rule
     public JenkinsRule rule = new JenkinsRule();
@@ -68,24 +68,36 @@ public class IntegrationTest {
             .file("src/docker/docker-compose.yml")
             .build();
 
-    private String jenkinsPort;
+    String host = "localhost";
+    String port = "5050";
 
+    private AccurevClient client;
+
+    private static String url;
+    private static String username;
+    private static String password;
     @BeforeClass
-    public static void testAccurevInstall() throws IOException, InterruptedException {
+    public static void init() throws IOException, InterruptedException {
+        url = System.getenv("_ACCUREV_URL") == "" ? System.getenv("_ACCUREV_URL") : "localhost:5050";
+        username = System.getenv("_ACCUREV_USERNAME") != null ? System.getenv("_ACCUREV_URL") : "accurev_user";
+        password = System.getenv("_ACCUREV_PASSWORD") != null ? System.getenv("_ACCUREV_URL") : "docker";
         assumeTrue("Can only run test with proper test setup",
-                AccurevTestExtensions.checkCommandExist("accurev")
+                AccurevTestExtensions.checkCommandExist("accurev") &&
+                        StringUtils.isNotBlank(url) &&
+                        StringUtils.isNotBlank(username) &&
+                        StringUtils.isNotEmpty(password)
         );
     }
 
     @Before
     public void setUp() throws IOException, InterruptedException {
         // Get the port from the JenkinsRule - When JenkinsRule runs it starts Jenkins at a random port
-        jenkinsPort = Integer.toString(rule.getURL().getPort());
+        String jenkinsPort = Integer.toString(rule.getURL().getPort());
         // For docker.exec command, no options needed.
         DockerComposeExecOption options = new DockerComposeExecOption() {
             @Override
             public List<String> options() {
-                return new ArrayList<>();
+                return Collections.emptyList();
             }
         };
         // Exec into the container, updating the url pointing to Jenkins with the correct port
@@ -93,13 +105,13 @@ public class IntegrationTest {
             @Override
             public List<String> arguments() {
                 List<String> arg = new ArrayList<>();
+                //arg.add("/bin/bash");
                 arg.add("perl");
-                arg.add("updateJenkinsHook.pl");
+                arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
                 return arg;
             }
         };
-
         docker.exec(options, "accurev", arguments);
 
         // For docker.exec command, no options needed.
@@ -126,20 +138,20 @@ public class IntegrationTest {
 
     @Test
     public void testWebhookConnection() throws Exception {
-        // Initialize workspace
-        sampleWorkspace.init("localhost", "5050", "accurev_user", "docker");
-        // Creates depot and stream
-        String depot = sampleWorkspace.mkDepot();
-        // Create a workspace so we can promote a File
-        sampleWorkspace.mkWorkspace(depot);
-
         FreeStyleProject project = rule.getInstance().createProject(FreeStyleProject.class, "test");
+        client = AccurevTestExtensions.createClientAtDir(project.getBuildDir(), url, username, password);
+        String depot = AccurevTestExtensions.generateString(10);
+        client.depot().create(depot).execute();
+        String workspace = AccurevTestExtensions.generateString(10);
+        client.workspace().create(workspace, depot).execute();
+
+
         SCMTrigger trigger = new SCMTrigger("");
         project.addTrigger(trigger);
         IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
         CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
                 .addCredentials(Domain.global(), c);
-        AccurevSCM scm = new AccurevSCM(AccurevSCM.createDepotList(sampleWorkspace.host, sampleWorkspace.port, c.getId()), Collections.singletonList(new StreamSpec(depot, depot)), Collections.emptyList());
+        AccurevSCM scm = new AccurevSCM(AccurevSCM.createDepotList(host, port, c.getId()), Collections.singletonList(new StreamSpec(depot, depot)), Collections.emptyList());
         project.setScm(scm);
         trigger.start(project, true);
         project.setQuietPeriod(0);
@@ -149,21 +161,26 @@ public class IntegrationTest {
         //System.setProperty("hudson.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID", "true");
         System.err.println(rule.jenkins.isUseCrumbs());
         attachPromoteTrigger(depot);
-        sampleWorkspace.commit("Test", sampleWorkspace.username, "Initial promote");
-
-        Thread.sleep(2000);
+        File file = AccurevTestExtensions.createFile(project.getBuildDir().getPath(), "file", "test");
+        List<String> files = new ArrayList<>();
+        files.add(file.getAbsolutePath());
+        client.add().add(files).comment("test").execute();
+        client.promote().files(files).comment("test").execute();
+        Thread.sleep(4000);
         String t = getTriggerLog();
         assertEquals(1, project.getLastBuild().number);
     }
 
     @Test
     public void testMQTTBrokerConnection() throws Exception {
+        FreeStyleProject project = rule.getInstance().createProject(FreeStyleProject.class, "test");
+        client = AccurevTestExtensions.createClientAtDir(project.getBuildDir(), url, username, password);
         // Initialize workspace
-        sampleWorkspace.init("localhost", "5050", "accurev_user", "docker");
-        // Creates depot and stream
-        String depot = sampleWorkspace.mkDepot();
-        // Create a workspace so we can promote a File
-        sampleWorkspace.mkWorkspace(depot);
+        String depot = AccurevTestExtensions.generateString(10);
+        client.depot().create(depot).execute();
+
+        String workspace = AccurevTestExtensions.generateString(10);
+        client.workspace().create(workspace, depot).execute();
 
 
         assertEquals( "", getStreamBuiltState(depot));
@@ -193,16 +210,13 @@ public class IntegrationTest {
 
     @Test
     public void fullTripTest() throws Exception {
-
-
-        // Initialize workspace
-        sampleWorkspace.init("localhost", "5050", "accurev_user", "docker");
-        // Creates depot and stream
-        String depot = sampleWorkspace.mkDepot();
-        // Create a workspace so we can promote a File
-        sampleWorkspace.mkWorkspace(depot);
-        // Create workflow job
         WorkflowJob project = rule.jenkins.createProject(WorkflowJob.class, "demo");
+        client = AccurevTestExtensions.createClientAtDir(project.getBuildDir(), url, username, password);
+        String depot = AccurevTestExtensions.generateString(10);
+        client.depot().create(depot).execute();
+        String workspace = AccurevTestExtensions.generateString(10);
+        client.workspace().create(workspace, depot).execute();
+
         // Add accurev credentials to store
         IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
         CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
@@ -220,7 +234,7 @@ public class IntegrationTest {
                         "   stages {\n" +
                         "       stage('single') {\n" +
                         "           steps ('checkout') {\n" +
-                        "                   accurev host: '" + sampleWorkspace.host + "', port: '"+  sampleWorkspace.port + "', depot: '" + depot + "', stream: '" + depot + "', credentialsId: '" + c.getId() + "'  \n" +
+                        "                   accurev host: '" + host + "', port: '"+  port + "', depot: '" + depot + "', stream: '" + depot + "', credentialsId: '" + c.getId() + "'  \n" +
                         "                   \n" +
                         "           }\n" +
                         "       }\n" +
@@ -248,10 +262,15 @@ public class IntegrationTest {
         String response = attachPromoteTrigger(depot);
 
         assertEquals("Created trigger server-post-promote-trig /home/accurev-user/accurev/storage/site_slice/triggers/server_post_promote_hook", response);
-        sampleWorkspace.commit("Test", sampleWorkspace.username, "Initial promote");
+
+        File file = AccurevTestExtensions.createFile(project.getBuildDir().getPath(), "file", "test");
+        List<String> files = new ArrayList<>();
+        files.add(file.getAbsolutePath());
+        client.add().add(files).comment("test").execute();
+        client.promote().files(files).comment("test").execute();
 
         // We need to give Accurev a chance to parse the newly committed file and issue a trigger
-        Thread.sleep(2000);
+        Thread.sleep(4000);
         String t = getTriggerLog();
         assertTrue(t.contains("server_post_promote triggered"));
         // Check we received a webhook and built the job

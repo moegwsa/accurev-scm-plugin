@@ -134,7 +134,7 @@ public class AccurevSCMSource extends SCMSource {
             }
 
             for (AccurevStream stream : streams.getList()) {
-                accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+                //accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
 
                 taskListener.getLogger().println("Processing object: " + stream.getName());
                 if (!context.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {

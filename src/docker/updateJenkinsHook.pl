@@ -9,7 +9,7 @@ my $port = $ARGV[0];
 my $host = $ARGV[1];
 
 
-if((not defined $host) && (not defined $port)){
+if(not defined $port){
   print "Please specify a port and or host! \n";
   exit(0);
 }

@@ -417,7 +417,6 @@ public class AccurevSCM extends SCM implements Serializable {
 
     public BuildChooser getBuildChooser() {
         BuildChooser bc = new DefaultBuildChooser();
-
         bc.accurevSCM = this;
 
         return bc;

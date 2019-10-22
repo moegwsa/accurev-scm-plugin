@@ -6,7 +6,14 @@ import com.palantir.docker.compose.connection.Container;
 import com.palantir.docker.compose.connection.DockerMachine;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
+import hudson.EnvVars;
+import hudson.model.FreeStyleProject;
+import hudson.model.TaskListener;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
+import hudson.util.Secret;
+import jenkins.plugins.accurevclient.Accurev;
+import jenkins.plugins.accurevclient.AccurevClient;
+import org.apache.commons.lang.StringUtils;
 import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
@@ -17,18 +24,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @Ignore("Only used for testing Docker instance")
 public class DockerTest {
 
     @Rule
-    public AccurevSampleWorkspaceRule sampleWorkspace = new AccurevSampleWorkspaceRule();
-
-    @Rule
     public JenkinsRule rule = new JenkinsRule();
-
-    //private DockerMachine.LocalBuilder dockerMachine = DockerMachine.localMachine();
 
 
     @Rule
@@ -36,10 +39,22 @@ public class DockerTest {
             .file("src/docker/docker-compose.yml")
             .build();
 
+    private AccurevClient client;
+
+    private static String url;
+    private static String username;
+    private static String password;
+
     @BeforeClass
-    public static void testAccurevInstall() throws IOException, InterruptedException {
+    public static void init() throws IOException, InterruptedException {
+        url = System.getenv("_ACCUREV_URL") == "" ? System.getenv("_ACCUREV_URL") : "localhost:5050";
+        username = System.getenv("_ACCUREV_USERNAME") != null ? System.getenv("_ACCUREV_URL") : "accurev_user";
+        password = System.getenv("_ACCUREV_PASSWORD") != null ? System.getenv("_ACCUREV_URL") : "docker";
         assumeTrue("Can only run test with proper test setup",
-                AccurevTestExtensions.checkCommandExist("accurev")
+                AccurevTestExtensions.checkCommandExist("accurev") &&
+                        StringUtils.isNotBlank(url) &&
+                        StringUtils.isNotBlank(username) &&
+                        StringUtils.isNotEmpty(password)
         );
     }
 
@@ -59,29 +74,25 @@ public class DockerTest {
             @Override
             public List<String> arguments() {
                 List<String> arg = new ArrayList<>();
-                arg.add("/bin/bash");
-                arg.add("-c");
-                arg.add("./changeJenkinsUrl.sh " + jenkinsPort);
+                //arg.add("/bin/bash");
+                arg.add("perl");
+                arg.add("./updateJenkinsHook.pl");
+                arg.add(jenkinsPort);
                 return arg;
             }
         };
         docker.exec(options, "accurev", arguments);
-
+        FreeStyleProject freeStyleProject = rule.createFreeStyleProject();
+        Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars())
+                .at(freeStyleProject.getBuildDir()).on(url);
+        client = accurev.getClient();
+        client.login().username(username).password(Secret.fromString(password)).execute();
+        assertTrue(client.getInfo().getLoggedIn());
     }
-    public DockerTest() throws IOException {
-
-    }
-
 
     @Test
     public void dockerTest() throws Exception {
-
-        //////////
-        docker.containers().container("accurev");
-
-
-        sampleWorkspace.init("localhost", "5050", "accurev_user", "docker");
-
+        assertTrue(url.contains(client.getInfo().getServerName()));
 
     }
 }
