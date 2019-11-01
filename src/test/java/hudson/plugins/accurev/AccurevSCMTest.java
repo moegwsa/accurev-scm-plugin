@@ -8,6 +8,7 @@ import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
 import hudson.EnvVars;
+import hudson.Launcher;
 import hudson.model.*;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
 import hudson.util.Secret;
@@ -90,7 +91,7 @@ public class AccurevSCMTest {
         };
         docker.exec(options, "accurev", arguments);
         FreeStyleProject freeStyleProject = rule.createFreeStyleProject();
-        Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars())
+        Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars(), new Launcher.LocalLauncher(TaskListener.NULL))
                 .at(freeStyleProject.getBuildDir()).on(url);
         client = accurev.getClient();
         client.login().username(username).password(Secret.fromString(password)).execute();

@@ -7,6 +7,7 @@ import com.palantir.docker.compose.connection.DockerMachine;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
 import hudson.EnvVars;
+import hudson.Launcher;
 import hudson.model.FreeStyleProject;
 import hudson.model.TaskListener;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
@@ -83,7 +84,7 @@ public class DockerTest {
         };
         docker.exec(options, "accurev", arguments);
         FreeStyleProject freeStyleProject = rule.createFreeStyleProject();
-        Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars())
+        Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars(),  new Launcher.LocalLauncher(TaskListener.NULL))
                 .at(freeStyleProject.getBuildDir()).on(url);
         client = accurev.getClient();
         client.login().username(username).password(Secret.fromString(password)).execute();

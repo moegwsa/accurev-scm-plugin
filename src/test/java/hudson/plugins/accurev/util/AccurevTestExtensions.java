@@ -1,6 +1,7 @@
 package hudson.plugins.accurev.util;
 
 import hudson.EnvVars;
+import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
 import jenkins.plugins.accurevclient.Accurev;
@@ -35,7 +36,7 @@ public class AccurevTestExtensions {
     }
 
     public static AccurevClient createClientAtDir(File path, String url, String username, String password) throws InterruptedException {
-        Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars())
+        Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars(),  new Launcher.LocalLauncher(TaskListener.NULL))
                 .at(path).on(url);
         AccurevClient client = accurev.getClient();
         client.login().username(username).password(Secret.fromString(password)).execute();
