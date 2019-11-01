@@ -52,7 +52,7 @@ public class AccurevSCM extends SCM implements Serializable {
 
     private String source = null;
     private List<StreamSpec> streams;
-    private transient List<ServerRemoteConfig> serverRemoteConfigs;
+    private List<ServerRemoteConfig> serverRemoteConfigs;
     @SuppressFBWarnings(value="SE_BAD_FIELD", justification="Known non-serializable field")
     private AccurevClient ac;
     @SuppressFBWarnings(value="SE_BAD_FIELD", justification="Known non-serializable field")
@@ -135,7 +135,7 @@ public class AccurevSCM extends SCM implements Serializable {
 
         final EnvVars environment = project.getEnvironment(node, listener);
 
-        Accurev accurev = Accurev.with(listener, environment);
+        Accurev accurev = Accurev.with(listener, environment, launcher);
         AccurevClient client = accurev.getClient();
         final BuildData buildData = getBuildData(lastBuild);
         Collection<AccurevTransaction> candidateTransactions = getBuildChooser().getCandidateTransactions(true, getSingleStream(), ac, listener, buildData);
@@ -175,13 +175,13 @@ public class AccurevSCM extends SCM implements Serializable {
         return ac;
     }
 
-    private void createClient(TaskListener listener, EnvVars environment, Run<?,?> build, FilePath workspace) throws IOException, InterruptedException {
+    private void createClient(TaskListener listener, EnvVars environment, Run<?,?> build, FilePath workspace, Launcher launcher) throws IOException, InterruptedException {
 
         if (workspace != null) {
             workspace.mkdirs();
         }
 
-        Accurev accurev = Accurev.with(listener, environment).at(workspace).on(getServerRemoteConfigs().get(0).getUrl());
+        Accurev accurev = Accurev.with(listener, environment, launcher).at(workspace).on(getServerRemoteConfigs().get(0).getUrl());
         this.ac = accurev.getClient();
 
         for (ServerRemoteConfig src : getServerRemoteConfigs()) {
@@ -238,13 +238,11 @@ public class AccurevSCM extends SCM implements Serializable {
         listener.getLogger().println("Building stream:" + getStreams().get(0).getName());
         BuildData prevBuildData = getBuildData(build.getPreviousBuild());
         BuildData buildData = copyBuildData(build.getPreviousBuild());
-
         if (VERBOSE && buildData.lastBuild != null) {
             listener.getLogger().println("Last Built TransactionId: " + buildData.lastBuild.transaction);
         }
-
         EnvVars environment = build.getEnvironment(listener);
-        createClient(listener, environment, build, workspace);
+        createClient(listener, environment, build, workspace, launcher);
 
 
         retrieveChanges(build, ac, listener);

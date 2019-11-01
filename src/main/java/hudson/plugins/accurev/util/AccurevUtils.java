@@ -1,8 +1,10 @@
 package hudson.plugins.accurev.util;
 
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Computer;
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 
 import java.io.Serializable;
@@ -24,5 +26,4 @@ public class AccurevUtils implements Serializable {
         }
         return j;
     }
-
 }

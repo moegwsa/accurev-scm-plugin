@@ -1,6 +1,8 @@
 package hudson.plugins.accurev.StreamSpec
 
-f = namespace(lib.FormTagLib)
+import lib.FormTagLib
+
+f = namespace(FormTagLib)
 
 f.entry(title:_("Depot"), field:"depot"){
     f.textbox(default:"")

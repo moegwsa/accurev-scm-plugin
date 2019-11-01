@@ -10,6 +10,7 @@ import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
+import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Item;
 import hudson.model.Project;
@@ -121,7 +122,7 @@ public class AccurevSCMSource extends SCMSource {
         try (AccurevSCMSourceRequest request = context.newRequest(this, taskListener)) {
 
 
-            Accurev accurev = Accurev.with(taskListener, new hudson.EnvVars()).on(remote);
+            Accurev accurev = Accurev.with(taskListener, new hudson.EnvVars(), new Launcher.LocalLauncher(taskListener)).on(remote);
             accurevClient = accurev.getClient();
             accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
 
@@ -359,7 +360,7 @@ public class AccurevSCMSource extends SCMSource {
 
         AccurevClient getAccurevClient(String url) {
 
-            AccurevClient client = Accurev.with((TaskListener) () -> null, new EnvVars()).on(url).getClient();
+            AccurevClient client = Accurev.with((TaskListener) () -> null, new EnvVars(), new Launcher.LocalLauncher(null)).on(url).getClient();
 
             return client;
         }

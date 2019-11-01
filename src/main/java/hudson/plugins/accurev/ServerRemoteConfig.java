@@ -61,6 +61,18 @@ public class ServerRemoteConfig extends AbstractDescribableImpl<ServerRemoteConf
         return credentialsId;
     }
 
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setPort(String port) {
+        this.port = port;
+    }
+
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
+    }
+
     @Exported
     public URIish getUri() {
         if(uri != null) return uri;
@@ -124,7 +136,7 @@ public class ServerRemoteConfig extends AbstractDescribableImpl<ServerRemoteConf
 
         @Override
         public String getDisplayName() {
-            return "";
+            return "Server Remote Config";
         }
     }
 }

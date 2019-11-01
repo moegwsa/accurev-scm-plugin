@@ -1,14 +1,17 @@
 package hudson.plugins.accurev.ServerRemoteConfig
 
-f = namespace(lib.FormTagLib)
-c = namespace(lib.CredentialsTagLib)
+import lib.CredentialsTagLib
+import lib.FormTagLib
+
+f = namespace(FormTagLib)
+c = namespace(CredentialsTagLib)
 
 f.entry(title:_("Host"), field:"host") {
-    f.textbox()
+    f.textbox(default:"")
 }
 
 f.entry(title:_("Port"), field:"port"){
-    f.textbox()
+    f.textbox(default:"")
 }
 
 f.entry(title:_("Credentials"), field:"credentialsId") {
