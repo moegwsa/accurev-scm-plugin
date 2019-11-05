@@ -274,7 +274,7 @@ public class AccurevSCM extends SCM implements Serializable {
             populateCommand.stream(transactionToBuild.marked.getName());
         }
 
-        populateCommand.timespec(Long.toString((transactionToBuild.transaction.getId()))).elements(files);
+        populateCommand.timespec(Long.toString((transactionToBuild.transaction.getId()))).overwrite(true).elements(files);
 
         for (AccurevSCMExtension ext : this.getExtensions()) {
             ext.decoratePopulateCommand(this, build, ac, listener, populateCommand);
