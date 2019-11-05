@@ -10,7 +10,7 @@
     <!--<groupId>io.jenkins.plugins</groupId> -->
     <groupId>jenkins-plugins</groupId>
     <artifactId>accurev-scm</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <properties>
         <jenkins.version>2.176.3</jenkins.version>
@@ -177,7 +177,7 @@
         <dependency>
             <groupId>com.github.WiMills</groupId>
             <artifactId>accurev-client-plugin</artifactId>
-            <version>66430336c8</version>
+            <version>3bf9bddc17</version>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.jenkins.plugins.accurev</groupId>-->
