@@ -53,7 +53,7 @@ public class BuildDataTest {
 
     @Test
     public void testGetIconFileName() {
-        assertThat(data.getIconFileName(), endsWith("/plugin/accurev/icons/accurev-48x48.png"));
+        assertThat(data.getIconFileName(), endsWith("/plugin/accurev/images/48x48/accurev.png"));
     }
 
     @Test

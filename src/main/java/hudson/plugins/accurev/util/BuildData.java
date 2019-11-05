@@ -1,5 +1,6 @@
 package hudson.plugins.accurev.util;
 
+import hudson.Functions;
 import hudson.model.Action;
 import hudson.model.Run;
 import hudson.plugins.accurev.ServerRemoteConfig;
@@ -84,17 +85,16 @@ public class BuildData implements Action, Serializable, Cloneable{
         return remoteStreams.contains(stream);
     }
 
-    @CheckForNull
-    @Override
+
     public String getIconFileName() {
-        return jenkins.model.Jenkins.RESOURCE_PATH + "/plugin/accurev/icons/accurev-48x48.png";
+        return jenkins.model.Jenkins.RESOURCE_PATH+"/plugin/accurev/images/48x48/accurev.png";
     }
+
+
 
     @CheckForNull
     @Override
     public String getDisplayName() {
-        if (scmName != null && !scmName.isEmpty())
-            return "Accurev Build Data: " + scmName;
         return "Accurev Build Data";
     }
 
