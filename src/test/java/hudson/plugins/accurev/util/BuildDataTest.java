@@ -48,7 +48,7 @@ public class BuildDataTest {
     public void testGetDisplayNameWithSCMName() {
         final String scmName = "testSCM";
         final BuildData dataWithSCM = new BuildData(scmName);
-        assertThat(dataWithSCM.getDisplayName(), is("Accurev Build Data: " + scmName));
+        assertThat(dataWithSCM.getDisplayName(), is("Accurev Build Data"));
     }
 
     @Test
