@@ -34,7 +34,7 @@ public class TopStreamDiscovery extends AccurevSCMExtension {
 
     @Override
     public void decoratePopulateCommand(AccurevSCM scm, Run<?, ?> build, AccurevClient accurev, TaskListener listener, PopulateCommand cmd) throws IOException, InterruptedException {
-        super.decoratePopulateCommand(scm, build, accurev, listener, cmd);
+
     }
 
     @Extension
