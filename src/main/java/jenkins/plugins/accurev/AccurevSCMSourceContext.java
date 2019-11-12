@@ -67,7 +67,7 @@ public class AccurevSCMSourceContext<C extends AccurevSCMSourceContext<C, R>, R 
     }
 
     public C topStream(String topStream) {
-        this.topStream = topStream.isEmpty() ? topStream : this.topStream;
+        this.topStream = topStream.isEmpty() ? this.topStream : topStream;
         return (C) this;
     }
 

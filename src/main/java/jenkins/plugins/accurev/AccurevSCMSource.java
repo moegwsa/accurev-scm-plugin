@@ -13,6 +13,7 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Item;
+import hudson.model.Node;
 import hudson.model.Project;
 import hudson.model.Queue;
 import hudson.model.TaskListener;
@@ -121,8 +122,14 @@ public class AccurevSCMSource extends SCMSource {
         AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(scmSourceCriteria, scmHeadObserver).withTraits(getTraits());
         try (AccurevSCMSourceRequest request = context.newRequest(this, taskListener)) {
 
-
-            Accurev accurev = Accurev.with(taskListener, new hudson.EnvVars(), new Launcher.LocalLauncher(taskListener)).on(remote);
+            Node instance = Jenkins.getInstance();
+            Launcher launcher;
+            if(instance != null) {
+                launcher = instance.createLauncher(taskListener);
+            }else {
+                launcher = new Launcher.LocalLauncher(taskListener);
+            }
+            Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
             accurevClient = accurev.getClient();
             accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
 

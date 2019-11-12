@@ -23,12 +23,14 @@ public class TopStreamDiscoveryTrait extends  AccurevSCMExtensionTrait<TopStream
 
     }
 
+
+
     public String getTopStream() {
-        return getExtension().getName();
+        return this.getExtension().getName();
     }
 
     public void setTopStream(String topStream) {
-        getExtension().setName(topStream);
+        this.getExtension().setName(topStream);
     }
 
     @Override

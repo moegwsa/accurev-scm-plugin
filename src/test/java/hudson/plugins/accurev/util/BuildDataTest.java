@@ -48,12 +48,12 @@ public class BuildDataTest {
     public void testGetDisplayNameWithSCMName() {
         final String scmName = "testSCM";
         final BuildData dataWithSCM = new BuildData(scmName);
-        assertThat(dataWithSCM.getDisplayName(), is("Accurev Build Data: " + scmName));
+        assertThat(dataWithSCM.getDisplayName(), is("Accurev Build Data"));
     }
 
     @Test
     public void testGetIconFileName() {
-        assertThat(data.getIconFileName(), endsWith("/plugin/accurev/icons/accurev-48x48.png"));
+        assertThat(data.getIconFileName(), endsWith("/plugin/accurev/images/48x48/accurev.png"));
     }
 
     @Test

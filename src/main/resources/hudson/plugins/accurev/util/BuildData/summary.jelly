@@ -3,7 +3,7 @@
          xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson"
          xmlns:f="/lib/form" xmlns:i="jelly:fmt"
 >
-    <t:summary icon="/plugin/accurev/icons/accurev-48x48.png">
+    <t:summary icon="/plugin/accurev/images/48x48/accurev.png">
         <b>${%Transaction}</b> ${it.lastBuild.transaction.id} : ${it.lastBuild.comment}
     </t:summary>
 </j:jelly>
