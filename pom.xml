@@ -177,12 +177,12 @@
         <dependency>
             <groupId>com.github.WiMills</groupId>
             <artifactId>accurev-client-plugin</artifactId>
-            <version>3bf9bddc17</version>
+            <version>0b819ed978</version>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.jenkins.plugins.accurev</groupId>-->
 <!--            <artifactId>accurev-client</artifactId>-->
-<!--            <version>1.0.0-SNAPSHOT</version>-->
+<!--            <version>1.0.1-SNAPSHOT</version>-->
 <!--        </dependency>-->
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
