@@ -61,5 +61,10 @@ triggers {
 }
 ```
 
+
+
 ### Gated Streams
 To use gated streams with the Accurev plugin, you have to put the triggers/server_master_trig.pl script under storage/site_slice/triggers and follow instructions inside on how to install. Furthermore the mqtt-gating-receiver.pl script needs to run on your accurev server, is this script is responsible for receiving MQTT messages and unlocking / promoting staged stream results.
+
+### Respond to Accurev
+In a Jenkinsfile, create a post { } section after the stages, and specify ```mqttResponse URL_TO_ACCUREV_SERVER```. That will send a respond back to the Mosquitto server that your Accurev server is using. 
