@@ -22,21 +22,32 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Collection;
 
 
-public class MqttResponseStep extends Notifier implements SimpleBuildStep {
+public class MqttResponseStep extends Notifier implements SimpleBuildStep{
 
+
+    private final String url;
 
     @DataBoundConstructor
-    public MqttResponseStep(){
+    public MqttResponseStep(String url){
+        this.url = url;
     }
-    
-    @Override
+
+    public String getUrl() {
+        return url;
+    }
+
+
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
 
         // TODO: Find a better way to access buildData
@@ -44,6 +55,7 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep {
         for(Action a : run.getAllActions()) {
             if (a instanceof BuildData) buildData = (BuildData) a;
         }
+        EnvVars characteristicEnvVars = run.getCharacteristicEnvVars();
         String content;
             content = this.replaceVariables("$BUILD_URL", run, listener) + "\n"
                     + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n";
@@ -54,8 +66,8 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep {
         int qos = 2;
         // Testing purposes
 
-        String broker = "tcp://" + this.replaceVariables("$ACCUREV_URL", run, listener);
-        
+        String broker = "tcp://" + url;
+
         // String broker = "tcp://URL_TO_MQTT";
         String clientId = "Jenkins MQTT";
         MemoryPersistence persistence = new MemoryPersistence();
@@ -80,7 +92,6 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep {
             listener.getLogger().println("loc " + me.getLocalizedMessage());
             listener.getLogger().println("cause " + me.getCause());
             listener.getLogger().println("excep " + me);
-            me.printStackTrace();
         }
     }
 
