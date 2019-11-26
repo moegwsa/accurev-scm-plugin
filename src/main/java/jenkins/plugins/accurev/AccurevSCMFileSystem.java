@@ -67,7 +67,7 @@ public class AccurevSCMFileSystem extends SCMFileSystem {
             if(credentials != null) {
                 accurevClient.login().username(credentials.getUsername()).password(credentials.getPassword()).execute();
                 long id = accurevClient.fetchTransaction(head).getId();
-                return !Objects.isNull(id) ? id : getRoot().lastModified();
+                return id;
             }
         }
         return getRoot().lastModified();
