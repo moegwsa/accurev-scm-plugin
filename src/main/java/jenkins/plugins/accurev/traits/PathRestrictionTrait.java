@@ -1,18 +1,14 @@
 package jenkins.plugins.accurev.traits;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.plugins.accurev.extensions.impl.PathRestriction;
 import jenkins.plugins.accurev.AccurevSCMBuilder;
 import jenkins.plugins.accurev.AccurevSCMSource;
 import jenkins.plugins.accurev.AccurevSCMSourceContext;
-import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
-import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.trait.SCMBuilder;
-import jenkins.scm.api.trait.SCMHeadPrefilter;
 import jenkins.scm.api.trait.SCMSourceContext;
 import jenkins.scm.api.trait.SCMSourceTraitDescriptor;
 import jenkins.scm.impl.trait.Discovery;

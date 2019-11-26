@@ -2,18 +2,18 @@ package hudson.plugins.accurev.util;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.Result;
-import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import org.kohsuke.stapler.export.ExportedBean;
 
-
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
 @ExportedBean(defaultVisibility = 998)
 public class Build implements Serializable, Cloneable {
-    public HashSet<Object> remoteStreams;
 
     @SuppressFBWarnings(value="SE_BAD_FIELD", justification="Known non-serializable field")
     public AccurevStream marked;
@@ -50,8 +50,6 @@ public class Build implements Serializable, Cloneable {
         return transaction;
     }
 
-
-
     public void setTransactionId(AccurevTransaction transaction) {
         this.transaction = transaction;
     }
@@ -74,7 +72,6 @@ public class Build implements Serializable, Cloneable {
         catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Build", e);
         }
-
         return clone;
     }
 

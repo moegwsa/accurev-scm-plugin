@@ -28,8 +28,6 @@ public class TriggerChildrenTrait extends AccurevSCMExtensionTrait<TriggerChildr
         return getExtension().getDepth();
     }
 
-
-
     @Symbol("accurevTriggerChildrenTrait")
     @Extension
     @Discovery

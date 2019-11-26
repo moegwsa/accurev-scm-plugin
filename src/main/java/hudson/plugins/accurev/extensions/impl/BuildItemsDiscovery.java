@@ -8,7 +8,6 @@ import hudson.plugins.accurev.extensions.AccurevSCMExtension;
 import hudson.plugins.accurev.extensions.AccurevSCMExtensionDescriptor;
 import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.commands.PopulateCommand;
-import org.apache.commons.lang.NotImplementedException;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;

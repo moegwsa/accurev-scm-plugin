@@ -1,13 +1,9 @@
 package jenkins.plugins.accurev;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
-import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Item;
@@ -20,7 +16,12 @@ import hudson.scm.SCM;
 import hudson.scm.SCMDescriptor;
 import hudson.security.ACL;
 import jenkins.plugins.accurevclient.AccurevClient;
-import jenkins.scm.api.*;
+import jenkins.scm.api.SCMFileSystem;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.SCMRevision;
+import jenkins.scm.api.SCMSource;
+import jenkins.scm.api.SCMSourceDescriptor;
+import jenkins.scm.api.SCMSourceOwner;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -58,7 +59,6 @@ public abstract class AccurevSCMFileSystemBuilder extends SCMFileSystem.Builder 
     public SCMFileSystem build(@NonNull Item item, @NonNull SCM scm, SCMRevision scmRevision) throws IOException, InterruptedException {
         if (scm instanceof AccurevSCM) {
             AccurevSCM accurevSCM = (AccurevSCM) scm;
-
             List<StreamSpec> streams = accurevSCM.getStreams();
             List<ServerRemoteConfig> configs = accurevSCM.getServerRemoteConfigs();
 
@@ -97,7 +97,6 @@ public abstract class AccurevSCMFileSystemBuilder extends SCMFileSystem.Builder 
     private SCMFileSystem build(String remote, StandardCredentials credentials, @Nullable SCMHead head, SCMRevision scmRevision) {
         AccurevClient accurevClient = null;
         if (scmRevision != null) {
-
             AccurevSCMSource.SCMRevisionImpl myRev = new AccurevSCMSource.SCMRevisionImpl(head, Long.parseLong(scmRevision.toString()));
             return new AccurevSCMFileSystem(accurevClient, remote, head.toString(), myRev);
         }
@@ -110,8 +109,7 @@ public abstract class AccurevSCMFileSystemBuilder extends SCMFileSystem.Builder 
             throws IOException, InterruptedException;
 
 
-    public final SCMFileSystem build(@NonNull SCMSource source, @NonNull SCMHead head, @CheckForNull SCMRevision rev)
-            throws IOException, InterruptedException {
+    public final SCMFileSystem build(@NonNull SCMSource source, @NonNull SCMHead head, @CheckForNull SCMRevision rev) {
         SCMSourceOwner owner = source.getOwner();
         if (source instanceof AccurevSCMSource && owner != null && supports(
                 ((AccurevSCMSource) source).getRemote())) {

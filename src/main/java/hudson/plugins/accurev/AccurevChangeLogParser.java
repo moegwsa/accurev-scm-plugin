@@ -2,7 +2,6 @@ package hudson.plugins.accurev;
 
 import hudson.model.Run;
 import hudson.scm.ChangeLogParser;
-import hudson.scm.ChangeLogSet;
 import hudson.scm.RepositoryBrowser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -17,14 +16,11 @@ import java.util.Set;
 
 public class AccurevChangeLogParser extends ChangeLogParser {
 
-
     public AccurevChangeLogParser(){
         super();
-
     }
 
     public void parse(InputStream changelog) throws IOException {
-
     }
 
     @Override
@@ -49,10 +45,8 @@ public class AccurevChangeLogParser extends ChangeLogParser {
                 }
                 lines = new ArrayList<>();
             }
-
             if(lines != null) lines.add(line);
         }
-
         if (lines != null) {
             r.add(parseTransaction(lines));
         }
@@ -62,6 +56,4 @@ public class AccurevChangeLogParser extends ChangeLogParser {
     private AccurevChangeSet parseTransaction(List<String> lines) {
         return new AccurevChangeSet(lines);
     }
-
-
 }

@@ -4,12 +4,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.scm.SCM;
 import jenkins.plugins.accurev.AccurevSCMHead;
 import jenkins.plugins.accurev.AccurevSCMSource;
-import jenkins.scm.api.*;
-import org.eclipse.jgit.transport.URIish;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.SCMHeadEvent;
+import jenkins.scm.api.SCMNavigator;
+import jenkins.scm.api.SCMRevision;
+import jenkins.scm.api.SCMSource;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +22,6 @@ public class AccurevSCMHeadEvent<T> extends SCMHeadEvent<AccurevCommitPayload> {
     public AccurevSCMHeadEvent(Type type, AccurevCommitPayload payload, String origin) {
         super(type, payload, origin);
         this.payload = payload;
-
     }
 
     @Override

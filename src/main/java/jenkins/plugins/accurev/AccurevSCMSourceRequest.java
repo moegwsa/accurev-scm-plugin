@@ -9,5 +9,4 @@ public class AccurevSCMSourceRequest extends SCMSourceRequest {
     public AccurevSCMSourceRequest(SCMSource scmSource, AccurevSCMSourceContext accurevSCMSourceContext, TaskListener taskListener) {
         super(scmSource, accurevSCMSourceContext, taskListener);
     }
-    
 }

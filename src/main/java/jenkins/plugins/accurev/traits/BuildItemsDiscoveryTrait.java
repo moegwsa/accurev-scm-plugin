@@ -1,7 +1,6 @@
 package jenkins.plugins.accurev.traits;
 
 import hudson.Extension;
-import hudson.plugins.accurev.extensions.AccurevSCMExtension;
 import hudson.plugins.accurev.extensions.impl.BuildItemsDiscovery;
 import jenkins.plugins.accurev.AccurevSCMBuilder;
 import jenkins.plugins.accurev.AccurevSCMSource;
@@ -9,7 +8,6 @@ import jenkins.plugins.accurev.AccurevSCMSourceContext;
 import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.trait.SCMBuilder;
 import jenkins.scm.api.trait.SCMSourceContext;
-import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMSourceTraitDescriptor;
 import jenkins.scm.impl.trait.Discovery;
 import org.jenkinsci.Symbol;

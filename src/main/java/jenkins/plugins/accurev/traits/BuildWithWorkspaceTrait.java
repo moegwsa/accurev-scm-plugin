@@ -1,7 +1,6 @@
 package jenkins.plugins.accurev.traits;
 
 import hudson.Extension;
-import hudson.plugins.accurev.extensions.impl.BuildItemsDiscovery;
 import hudson.plugins.accurev.extensions.impl.BuildWithWorkspace;
 import jenkins.plugins.accurev.AccurevSCMBuilder;
 import jenkins.plugins.accurev.AccurevSCMSource;

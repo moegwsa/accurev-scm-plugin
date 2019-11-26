@@ -1,11 +1,8 @@
 package hudson.plugins.accurev.util;
 
-import hudson.Functions;
 import hudson.model.Action;
 import hudson.model.Run;
 import hudson.plugins.accurev.ServerRemoteConfig;
-import hudson.plugins.accurev.StreamSpec;
-import jenkins.model.Jenkins;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import org.kohsuke.accmod.Restricted;
@@ -14,9 +11,14 @@ import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
+
 import javax.annotation.CheckForNull;
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @ExportedBean(defaultVisibility = 999)
 public class BuildData implements Action, Serializable, Cloneable{
@@ -80,17 +82,13 @@ public class BuildData implements Action, Serializable, Cloneable{
         this.remoteStreams.add(stream);
     }
 
-
     public boolean hasBeenReferenced(String stream) {
         return remoteStreams.contains(stream);
     }
 
-
     public String getIconFileName() {
         return jenkins.model.Jenkins.RESOURCE_PATH+"/plugin/accurev/images/48x48/accurev.png";
     }
-
-
 
     @CheckForNull
     @Override
@@ -134,7 +132,6 @@ public class BuildData implements Action, Serializable, Cloneable{
 
         return clone;
     }
-
 
     @Restricted(NoExternalUse.class) // only used from stapler/jelly
     @edu.umd.cs.findbugs.annotations.CheckForNull

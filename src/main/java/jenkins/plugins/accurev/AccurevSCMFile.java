@@ -2,17 +2,18 @@ package jenkins.plugins.accurev;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.util.Secret;
 import jenkins.scm.api.SCMFile;
-import org.apache.commons.lang.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class AccurevSCMFile extends SCMFile {
@@ -34,7 +35,6 @@ public class AccurevSCMFile extends SCMFile {
     protected SCMFile newChild(@NonNull String name, boolean assumeIsDirectory) {
         return new AccurevSCMFile(fs, this, name, assumeIsDirectory ? Type.DIRECTORY : Type.REGULAR_FILE);
     }
-
 
     @NonNull
     @Override
@@ -74,7 +74,6 @@ public class AccurevSCMFile extends SCMFile {
     protected Type type() throws IOException, InterruptedException {
         return fileType;
     }
-
 
     @Override
     public InputStream content() throws IOException, InterruptedException {

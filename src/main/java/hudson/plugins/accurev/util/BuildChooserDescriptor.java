@@ -2,7 +2,6 @@ package hudson.plugins.accurev.util;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.DescriptorExtensionList;
-import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import jenkins.model.Jenkins;

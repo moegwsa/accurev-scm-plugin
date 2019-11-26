@@ -3,7 +3,6 @@ package hudson.plugins.accurev.util;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
-import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.plugins.accurev.AccurevSCM;
 import jenkins.model.Jenkins;
@@ -24,8 +23,6 @@ public abstract class BuildChooser implements ExtensionPoint, Describable<BuildC
     public final String getDisplayName() {
         return getDescriptor().getDisplayName();
     }
-
-
 
     public Collection<AccurevTransaction> getCandidateTransactions(boolean isPollCall, String streamSpec, AccurevClient ac, TaskListener listener, BuildData data){
         throw new UnsupportedOperationException("getCandidateRevisions method must be overridden");

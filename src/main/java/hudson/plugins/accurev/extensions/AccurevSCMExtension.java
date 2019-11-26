@@ -14,7 +14,6 @@ import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import org.apache.commons.lang.NotImplementedException;
 
-
 import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.util.Collection;

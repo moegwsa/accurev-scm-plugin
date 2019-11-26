@@ -7,16 +7,32 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.*;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
+import hudson.model.Cause;
+import hudson.model.ItemGroup;
+import hudson.model.Job;
+import hudson.model.Node;
 import hudson.model.Queue;
-import hudson.model.*;
+import hudson.model.Run;
+import hudson.model.Saveable;
+import hudson.model.TaskListener;
 import hudson.model.queue.Tasks;
 import hudson.plugins.accurev.extensions.AccurevSCMExtension;
 import hudson.plugins.accurev.extensions.AccurevSCMExtensionDescriptor;
-import hudson.plugins.accurev.extensions.impl.BuildWithWorkspace;
-import hudson.plugins.accurev.util.*;
+import hudson.plugins.accurev.util.AccurevUtils;
 import hudson.plugins.accurev.util.Build;
-import hudson.scm.*;
+import hudson.plugins.accurev.util.BuildChooser;
+import hudson.plugins.accurev.util.BuildData;
+import hudson.plugins.accurev.util.DefaultBuildChooser;
+import hudson.scm.ChangeLogParser;
+import hudson.scm.PollingResult;
+import hudson.scm.SCM;
+import hudson.scm.SCMDescriptor;
+import hudson.scm.SCMRevisionState;
 import hudson.security.ACL;
 import hudson.util.DescribableList;
 import jenkins.plugins.accurevclient.Accurev;
@@ -24,7 +40,6 @@ import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.AccurevException;
 import jenkins.plugins.accurevclient.commands.PopulateCommand;
 import jenkins.plugins.accurevclient.model.AccurevStream;
-import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -36,10 +51,23 @@ import org.kohsuke.stapler.export.Exported;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.io.Serializable;
+import java.io.Writer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static com.google.common.collect.Iterables.isEmpty;
 import static com.google.common.collect.Lists.newArrayList;
@@ -108,21 +136,16 @@ public class AccurevSCM extends SCM implements Serializable {
         return new AccurevChangeLogParser();
     }
 
-
     public static List<ServerRemoteConfig> createDepotList(String host, String port, String credentialsId){
         List<ServerRemoteConfig> depotList = new ArrayList<>();
         depotList.add(new ServerRemoteConfig(host, port, credentialsId));
         return depotList;
     }
 
-
     @Override
     public PollingResult compareRemoteRevisionWith(Job<?, ?> project, Launcher launcher, FilePath workspace, final @NonNull TaskListener listener, SCMRevisionState baseline) throws IOException, InterruptedException {
         // Poll for changes. Are there any unbuilt revisions that Hudson ought to build ?
-
-
         listener.getLogger().println("Using strategy: " + getBuildChooser().getDisplayName());
-
 
         final Run lastBuild = project.getLastBuild();
         if (lastBuild == null) {
@@ -132,9 +155,7 @@ public class AccurevSCM extends SCM implements Serializable {
         }
 
         final Node node = AccurevUtils.workspaceToNode(workspace);
-
         final EnvVars environment = project.getEnvironment(node, listener);
-
         Accurev accurev = Accurev.with(listener, environment, launcher);
         AccurevClient client = accurev.getClient();
         final BuildData buildData = getBuildData(lastBuild);
@@ -145,12 +166,8 @@ public class AccurevSCM extends SCM implements Serializable {
                 return BUILD_NOW;
             }
         }
-
-        //return NO_CHANGES;
         return NO_CHANGES;
     }
-
-
 
     private boolean isTransactionExcluded(AccurevClient client, AccurevTransaction transaction, TaskListener listener, BuildData buildData) throws IOException, InterruptedException  {
         try {
@@ -168,7 +185,6 @@ public class AccurevSCM extends SCM implements Serializable {
             e.printStackTrace(listener.error("Failed to determine if we want to exclude transaction " + transaction.getId()));
             return false;
         }
-
     }
 
     public AccurevClient getClient() {
@@ -208,12 +224,9 @@ public class AccurevSCM extends SCM implements Serializable {
                         CredentialsProvider.track((build.getParent()).getLastBuild(),credentials);
                     }
                 }
-
-
             }
         }
     }
-
 
     private String createUrl(ServerRemoteConfig serverRemoteConfig) {
         return serverRemoteConfig.getHost() + ":" + serverRemoteConfig.getPort();
@@ -258,9 +271,7 @@ public class AccurevSCM extends SCM implements Serializable {
         files.add(".");
 
         environment.put(ACCUREV_STREAM, getStreams().get(0).getName());
-
         ac.update();
-
         PopulateCommand populateCommand = ac.populate();
 
         boolean requiresWorkspace = false;
@@ -286,8 +297,6 @@ public class AccurevSCM extends SCM implements Serializable {
         if (changelogFile != null) {
             computeChangeLog(ac, listener, transactionToBuild, prevBuildData, buildData, new FilePath(changelogFile));
         }
-
-
     }
 
     @Override
@@ -330,7 +339,6 @@ public class AccurevSCM extends SCM implements Serializable {
         }
 
         Build transToBuild;
-
         if(!candidates.isEmpty()) {
             AccurevTransaction markedTransaction = candidates.stream().max(Comparator.comparing(i -> i.getId())).get();
             AccurevStream stream = ac.fetchStream(getStreams().get(0).getDepot(), getSingleStream());
@@ -341,9 +349,7 @@ public class AccurevSCM extends SCM implements Serializable {
             AccurevStream stream = ac.fetchStream(getStreams().get(0).getDepot(), getSingleStream());
             transToBuild = new Build(stream, markedTransaction,  candidates, build.getNumber(), null);
             buildData.saveBuild(transToBuild);
-
         }
-
 
         /**
          *
@@ -409,27 +415,20 @@ public class AccurevSCM extends SCM implements Serializable {
         if (extensions == null)
             extensions = new DescribableList<>(Saveable.NOOP);
 
-
         return this;
     }
 
     public BuildChooser getBuildChooser() {
         BuildChooser bc = new DefaultBuildChooser();
         bc.accurevSCM = this;
-
         return bc;
-
-
     }
 
     private String getSingleStream() {
-
         if(getStreams().size() != 1){
             return null;
         }
-
         String stream = getStreams().get(0).getName();
-
         return stream;
     }
 
@@ -486,11 +485,6 @@ public class AccurevSCM extends SCM implements Serializable {
         }
         return false;
     }
-
-//    @Override
-//    public void postCheckout(@Nonnull Run<?, ?> build, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener) throws IOException, InterruptedException {
-//        listener.getLogger().println("PostCheckout ran as well");
-//    }
 
     @CheckForNull
     @Override
