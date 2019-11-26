@@ -19,22 +19,28 @@ import hudson.model.Queue;
 import hudson.model.TaskListener;
 import hudson.model.queue.Tasks;
 import hudson.plugins.accurev.AccurevSCMRevision;
-import hudson.plugins.accurev.AccurevStatus;
-import hudson.plugins.accurev.extensions.AccurevSCMExtension;
-import hudson.plugins.accurev.extensions.impl.PathRestriction;
 import hudson.scm.SCM;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
-import jenkins.plugins.accurev.traits.AccurevSCMExtensionTrait;
 import jenkins.plugins.accurev.traits.BuildItemsDiscoveryTrait;
-import jenkins.plugins.accurev.traits.PathRestrictionTrait;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
-import jenkins.plugins.accurevclient.AccurevException;
-import jenkins.plugins.accurevclient.model.*;
-import jenkins.scm.api.*;
+import jenkins.plugins.accurevclient.model.AccurevStream;
+import jenkins.plugins.accurevclient.model.AccurevStreamType;
+import jenkins.plugins.accurevclient.model.AccurevStreams;
+import jenkins.plugins.accurevclient.model.AccurevTransaction;
+import jenkins.scm.api.SCMFile;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.SCMHeadEvent;
+import jenkins.scm.api.SCMHeadObserver;
+import jenkins.scm.api.SCMProbe;
+import jenkins.scm.api.SCMProbeStat;
+import jenkins.scm.api.SCMRevision;
+import jenkins.scm.api.SCMSource;
+import jenkins.scm.api.SCMSourceCriteria;
+import jenkins.scm.api.SCMSourceDescriptor;
 import jenkins.scm.api.trait.SCMSourceRequest;
 import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMSourceTraitDescriptor;
@@ -51,9 +57,7 @@ import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -135,10 +139,10 @@ public class AccurevSCMSource extends SCMSource {
 
             AccurevStreams streams;
 
-            if (!context.topStream.isEmpty()) {
-                streams = accurevClient.getChildStreams(depot, context.topStream);
-            } else {
+            if (context.getTopStream().isEmpty()) {
                 streams = accurevClient.getStreams(depot);
+            } else {
+                streams = accurevClient.getChildStreams(depot, context.getTopStream());
             }
 
             for (AccurevStream stream : streams.getList()) {
@@ -165,11 +169,7 @@ public class AccurevSCMSource extends SCMSource {
                     continue;
                 }
 
-
                 AccurevTransaction highest = accurevClient.fetchTransaction(stream.getName());
-
-
-
                 SCMHead head = new SCMHead(stream.getName());
 
                 SCMRevisionImpl revision = new SCMRevisionImpl(head, highest.getId());
@@ -188,9 +188,7 @@ public class AccurevSCMSource extends SCMSource {
                         })
                 ) ;
             }
-
         }
-        return;
     }
 
 
@@ -245,8 +243,6 @@ public class AccurevSCMSource extends SCMSource {
         if (credentialsId == null) {
             return null;
         }
-
-
         return CredentialsMatchers
                 .firstOrNull(
                         CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, getOwner(),
@@ -339,17 +335,13 @@ public class AccurevSCMSource extends SCMSource {
             if (sourceHost == null || sourcePort == null) {
                 return FormValidation.error("Host and Port needs to be set");
             }
-
             AccurevClient client = getAccurevClient((sourceHost + ":" + sourcePort));
-
-
             List<StandardUsernamePasswordCredentials> serverCredentials = CredentialsProvider.lookupCredentials(
                     StandardUsernamePasswordCredentials.class
             );
             CredentialsMatcher srcMatcher = CredentialsMatchers.withId(credentialsId);
             CredentialsMatcher idMatcher = CredentialsMatchers.allOf(srcMatcher, AccurevClient.Companion.getCREDENTIALS_MATCHER());
             StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(serverCredentials, idMatcher);
-
 
             if (credentials != null) {
                 try {
@@ -358,16 +350,12 @@ public class AccurevSCMSource extends SCMSource {
                     FormValidation.error(e.getMessage());
                 }
             }
-
-
             return !client.getInfo().getPrincipal().equals("(not logged in") ? FormValidation.ok("Success") : FormValidation.error("Could not log in");
 
         }
 
         AccurevClient getAccurevClient(String url) {
-
             AccurevClient client = Accurev.with((TaskListener) () -> null, new EnvVars(), new Launcher.LocalLauncher(null)).on(url).getClient();
-
             return client;
         }
     }
@@ -400,9 +388,7 @@ public class AccurevSCMSource extends SCMSource {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-
             SCMRevisionImpl that = (SCMRevisionImpl) o;
-
             return StringUtils.equals(String.valueOf(hash), String.valueOf(that.hash)) && getHead().equals(that.getHead());
 
         }
@@ -452,20 +438,18 @@ public class AccurevSCMSource extends SCMSource {
         @Override
         public SCMProbeStat stat(@NonNull String path) throws IOException {
             try {
-
                 accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             String file = accurevClient.getFile(name, path, Long.toString(transactionId));
             if (!file.isEmpty()) return SCMProbeStat.fromType(SCMFile.Type.REGULAR_FILE);
-
             return SCMProbeStat.fromType(SCMFile.Type.NONEXISTENT);
 
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
 
         }
     }

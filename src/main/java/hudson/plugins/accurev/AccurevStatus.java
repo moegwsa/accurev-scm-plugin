@@ -1,27 +1,21 @@
 package hudson.plugins.accurev;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import hudson.ExtensionList;
 import hudson.ExtensionPoint;
 import hudson.Util;
-import hudson.model.*;
-import hudson.scm.SCM;
-import hudson.security.ACL;
-import hudson.triggers.SCMTrigger;
-import jenkins.model.Jenkins;
-import jenkins.plugins.accurev.AccurevSCMHead;
-import jenkins.plugins.accurev.AccurevSCMSource;
-import jenkins.scm.api.*;
-import jenkins.triggers.SCMTriggerItem;
-import org.acegisecurity.context.SecurityContext;
-import org.acegisecurity.context.SecurityContextHolder;
+import hudson.model.Cause;
+import hudson.model.Item;
+import hudson.model.UnprotectedRootAction;
+import jenkins.scm.api.SCMEvent;
+import jenkins.scm.api.SCMHeadEvent;
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.jgit.transport.URIish;
-import org.kohsuke.stapler.*;
+import org.kohsuke.stapler.HttpResponse;
+import org.kohsuke.stapler.HttpResponses;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -29,13 +23,13 @@ import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 
 @Extension
@@ -68,19 +62,16 @@ public class AccurevStatus implements UnprotectedRootAction {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-
         s.append("HOST: ");
         s.append(lastHost);
 
         s.append(" PORT: ");
         s.append(lastPort);
 
-
         if (lastTransaction != null) {
             s.append(" Transaction: ");
             s.append(lastTransaction);
         }
-
         if (lastStreams != null) {
             s.append(" Streams: ");
             s.append(lastStreams);
@@ -106,8 +97,6 @@ public class AccurevStatus implements UnprotectedRootAction {
         } catch (URISyntaxException e) {
             return HttpResponses.error(SC_BAD_REQUEST, new Exception("Illegal Host: " + host + " and port: " + port, e));
         }
-
-
         streams = Util.fixEmptyAndTrim(streams);
 
         String[] streamsArray;
@@ -116,10 +105,7 @@ public class AccurevStatus implements UnprotectedRootAction {
         } else {
             streamsArray = streams.split(",");
         }
-
         String origin = SCMEvent.originOf(request);
-
-
         if (streamsArray.length > 0) {
             for (String stream : streamsArray) {
                 if (StringUtils.isNotBlank(stream) && StringUtils.isNotBlank(transaction)) {
@@ -127,88 +113,8 @@ public class AccurevStatus implements UnprotectedRootAction {
                             SCMEvent.Type.UPDATED, new AccurevCommitPayload(uri, stream, transaction), origin));
                     return HttpResponses.ok();
                 }
-
-//         Jenkins jenkins = Jenkins.getInstanceOrNull();
-//                        else {
-//
-//                            if (jenkins == null) {
-//                                LOGGER.severe("Jenkins.getInstance() is null in AccurevStatus.onNotifyCommit");
-//                                return result;
-//                            }
-//
-//                            for (final Item project : jenkins.getAllItems()) {
-//                                SCMTriggerItem scmTriggerItem = SCMTriggerItem.SCMTriggerItems.asSCMTriggerItem(project);
-//                                if (scmTriggerItem == null) {
-//                                    continue;
-//                                }
-//                                for (SCM scm : scmTriggerItem.getSCMs()) {
-//                                    if (!(scm instanceof AccurevSCM)) {
-//                                        continue;
-//                                    }
-//                                    AccurevSCM accurev = (AccurevSCM) scm;
-//                                    scmFound = true;
-//
-//                                    for (ServerRemoteConfig server : accurev.getServerRemoteConfigs()) {
-//                                        boolean serverMatches = false;
-//                                        URIish matchedUrl = null;
-//                                        if (looselyMatches(server.getUri(), uri)) {
-//                                            serverMatches = true;
-//                                            matchedUrl = server.getUri();
-//                                            break;
-//                                        }
-//                                    }
-//
-//                                    boolean streamMatches = false;
-//                                    List<StreamSpec> matchingStreams;
-//
-//
-//                                    matchingStreams = findMatchingStreams(streams, accurev.getStreams());
-//                                    if (matchingStreams.size() > 0) {
-//                                        streamMatches = true;
-//                                    }
-//
-//
-//                                    if (!streamMatches) continue;
-//
-//                                    SCMTrigger trigger = scmTriggerItem.getSCMTrigger();
-//
-//                                    if (isNotEmpty(transaction)) {
-//                                        scmTriggerItem.scheduleBuild2(scmTriggerItem.getQuietPeriod(),
-//                                                new CauseAction(new CommitHookCause(transaction)),
-//                                                new TransactionParameterAction(transaction, uri));
-//                                        result.add(new ScheduledResponseContributor(project));
-//                                    } else {
-//                                        LOGGER.log(Level.INFO, "Triggering the polling of {0}", project.getFullDisplayName());
-//                                        trigger.run();
-//                                        result.add(new PollingScheduledResponseContributor(project));
-//                                        break;
-//                                    }
-//                                }
-//                            }
-//
-//                            if (!scmFound) {
-//                                result.add(new MessageResponseContributor("No accurev jobs found"));
-//                            }
-//
-//                        }
-
             }
         }
-//
-//        try {
-//            if(jenkins != null) {
-//                Collection<Listener> listeners = jenkins.getExtensionList(Listener.class);
-//                if (listeners != null) {
-//                    for (Listener listener : listeners) {
-//                        listener.onNotifyCommit(origin, uri, transaction, streamsArray);
-//                    }
-//                }
-//            }
-//        }catch(Exception e) {
-//            e.printStackTrace();
-//        }
-
-
         return (staplerRequest, staplerResponse, o) -> {
             staplerResponse.setStatus(SC_OK);
             staplerResponse.setContentType("text/plain");

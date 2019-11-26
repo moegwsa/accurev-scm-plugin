@@ -5,7 +5,6 @@ import hudson.scm.ChangeLogSet;
 import hudson.scm.RepositoryBrowser;
 import org.kohsuke.stapler.export.Exported;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -21,7 +20,6 @@ public class AccurevChangeSetList extends ChangeLogSet<AccurevChangeSet> {
         for(AccurevChangeSet log : logs)
             log.setParent(this);
     }
-
 
     @Override
     public boolean isEmptySet() {

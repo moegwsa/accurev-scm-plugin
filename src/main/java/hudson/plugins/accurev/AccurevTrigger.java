@@ -13,7 +13,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class AccurevTrigger extends Trigger<Job<?, ?>> {
 
-
     public AccurevTrigger(String scmpoll_spec) throws ANTLRException {
         super(scmpoll_spec);
     }

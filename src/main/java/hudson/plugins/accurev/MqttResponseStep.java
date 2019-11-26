@@ -22,11 +22,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.workflow.steps.Step;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -55,7 +51,6 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
         for(Action a : run.getAllActions()) {
             if (a instanceof BuildData) buildData = (BuildData) a;
         }
-        EnvVars characteristicEnvVars = run.getCharacteristicEnvVars();
         String content;
             content = this.replaceVariables("$BUILD_URL", run, listener) + "\n"
                     + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n";
@@ -63,12 +58,8 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
         // Todo: Need to create some security so that if the buildData is empty, we can catch the empty transaction in the perl script
         String topic = "gatedStream/" + buildData.lastBuild.getMarked().getName() + "/" + buildData.lastBuild.transaction.getId();
         
-        int qos = 2;
-        // Testing purposes
-
+        int qualityOfService = 2;
         String broker = "tcp://" + url;
-
-        // String broker = "tcp://URL_TO_MQTT";
         String clientId = "Jenkins MQTT";
         MemoryPersistence persistence = new MemoryPersistence();
 
@@ -81,7 +72,7 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
             listener.getLogger().println("Connected");
             listener.getLogger().println("Publishing message: " + content);
             MqttMessage message = new MqttMessage(content.getBytes("UTF-8"));
-            message.setQos(qos);
+            message.setQos(qualityOfService);
             sampleClient.publish(topic, message);
             listener.getLogger().println("Message published");
             sampleClient.disconnect();
@@ -99,8 +90,6 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
             throws IOException, InterruptedException {
 
         final Result buildResult = run.getResult();
-
-
         final EnvVars env = run.getEnvironment(listener);
         if (run instanceof AbstractBuild) {
             env.overrideAll(((AbstractBuild) run).getBuildVariables());

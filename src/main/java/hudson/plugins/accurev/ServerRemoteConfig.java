@@ -3,12 +3,12 @@ package hudson.plugins.accurev;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.Extension;
-import hudson.model.*;
-import hudson.model.queue.Tasks;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
@@ -19,11 +19,9 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
-import javax.annotation.CheckForNull;
 import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.util.Objects;
-import java.util.UUID;
 
 @ExportedBean
 public class ServerRemoteConfig extends AbstractDescribableImpl<ServerRemoteConfig> implements Serializable {

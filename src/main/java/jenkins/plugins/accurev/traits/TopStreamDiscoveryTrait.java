@@ -15,15 +15,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class TopStreamDiscoveryTrait extends  AccurevSCMExtensionTrait<TopStreamDiscovery>{
 
-
     @DataBoundConstructor
     public TopStreamDiscoveryTrait(String topStream) {
         super(new TopStreamDiscovery());
         setTopStream(topStream);
 
     }
-
-
 
     public String getTopStream() {
         return this.getExtension().getName();

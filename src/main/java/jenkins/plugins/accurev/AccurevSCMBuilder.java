@@ -5,16 +5,18 @@ import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.ServerRemoteConfig;
 import hudson.plugins.accurev.StreamSpec;
 import hudson.plugins.accurev.extensions.AccurevSCMExtension;
-import jenkins.plugins.accurevclient.Accurev;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.SCMRevision;
 import jenkins.scm.api.trait.SCMBuilder;
 
 import javax.annotation.CheckForNull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class AccurevSCMBuilder<B extends AccurevSCMBuilder<B>> extends SCMBuilder<B, AccurevSCM> {
-
 
     private final String remote;
     private String credentialsId;

@@ -6,7 +6,6 @@ import hudson.scm.EditType;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -15,8 +14,6 @@ import java.util.Date;
 import java.util.List;
 
 public class AccurevChangeSet extends ChangeLogSet.Entry {
-
-
     private String transactionId;
     private String title;
     private String type;
@@ -65,7 +62,6 @@ public class AccurevChangeSet extends ChangeLogSet.Entry {
             }else if (line.startsWith(":")){
                 // TODO: AffectedPaths
             }
-
         }
         this.title = message.toString();
 
@@ -111,7 +107,6 @@ public class AccurevChangeSet extends ChangeLogSet.Entry {
         User user;
         user = User.getById(this.user, true);
         user.setFullName(this.user);
-
         return user;
     }
 
@@ -122,7 +117,6 @@ public class AccurevChangeSet extends ChangeLogSet.Entry {
 
     @ExportedBean(defaultVisibility=999)
     public static class Path implements ChangeLogSet.AffectedFile {
-
         private String src;
         private String dst;
         private char action;

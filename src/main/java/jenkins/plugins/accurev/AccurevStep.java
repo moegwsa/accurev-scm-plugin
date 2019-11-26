@@ -27,7 +27,6 @@ public final class AccurevStep extends SCMStep {
     private String host;
     private String port;
 
-
     public AccurevStep(String depot, String port) {
         this.host = depot;
         this.port = port;
@@ -55,7 +54,6 @@ public final class AccurevStep extends SCMStep {
     public void setCredentialsId(String credentialsId) {
         this.credentialsId = Util.fixEmpty(credentialsId);
     }
-
 
     public String getDepot() {
         return depot;
@@ -92,8 +90,6 @@ public final class AccurevStep extends SCMStep {
     @Symbol("accurev")
     @Extension
     public static final class DescriptorImpl extends SCMStepDescriptor {
-
-
         @Inject
         private ServerRemoteConfig.DescriptorImpl delegate;
 
@@ -109,9 +105,6 @@ public final class AccurevStep extends SCMStep {
 
         @Override
         public String getDisplayName(){ return "AccurevStep";}
-
-
-
     }
 }
 

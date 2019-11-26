@@ -7,7 +7,6 @@ import hudson.model.TaskListener;
 import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.extensions.AccurevSCMExtension;
 import hudson.plugins.accurev.extensions.AccurevSCMExtensionDescriptor;
-import hudson.plugins.accurev.util.BuildData;
 import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.AccurevException;
 import jenkins.plugins.accurevclient.commands.PopulateCommand;
@@ -89,14 +88,11 @@ public class PathRestriction extends AccurevSCMExtension {
     private List<Pattern> getRegionsPatterns(String[] regions) {
         if (regions != null) {
             List<Pattern> patterns = new ArrayList<>(regions.length);
-
             for (String region : regions) {
                 patterns.add(Pattern.compile(region));
             }
-
             return patterns;
         }
-
         return Collections.emptyList();
     }
 
@@ -104,7 +100,6 @@ public class PathRestriction extends AccurevSCMExtension {
     public Boolean isTransactionExcluded(AccurevTransaction transaction, TaskListener listener) throws IOException, InterruptedException, AccurevException {
 
         Collection<String> paths = transaction.affectedPaths();
-
         if(paths.isEmpty()) {
             return false;
         }

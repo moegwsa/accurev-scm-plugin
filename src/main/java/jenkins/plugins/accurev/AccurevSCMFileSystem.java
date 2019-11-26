@@ -1,7 +1,5 @@
 package jenkins.plugins.accurev;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
-import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
@@ -17,10 +15,14 @@ import hudson.scm.SCMDescriptor;
 import hudson.security.ACL;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
-import jenkins.scm.api.*;
+import jenkins.scm.api.SCMFile;
+import jenkins.scm.api.SCMFileSystem;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.SCMRevision;
+import jenkins.scm.api.SCMSource;
+import jenkins.scm.api.SCMSourceDescriptor;
 
 import java.io.IOException;
-import java.util.Objects;
 
 
 public class AccurevSCMFileSystem extends SCMFileSystem {
@@ -44,19 +46,6 @@ public class AccurevSCMFileSystem extends SCMFileSystem {
         this.remote = remote;
         this.head = head;
         this.accurevClient = accurevClient;
-//        if(rev == null){
-//            try {
-//                accurevClient.login().username(accurevClient.getCredentials().getUsername()).password(accurevClient.getCredentials().getPassword()).execute();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//            transactionId = accurevClient.fetchTransaction(head).getId();
-//
-//        }else {
-//            transactionId =rev.getHash();
-//        }
-
-
     }
 
     @SuppressWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
@@ -121,7 +110,6 @@ public class AccurevSCMFileSystem extends SCMFileSystem {
            accurev.setUrl(accurevSCMSource.getRemote());
            AccurevClient accurevClient = accurev.getClient();
            accurevClient.setCredentials(accurevSCMSource.getCredentials());
-
            return new AccurevSCMFileSystem(accurevClient, accurevSCMSource.getRemote(), head.getName(), (AccurevSCMSource.SCMRevisionImpl) rev);
         }
 
@@ -151,7 +139,6 @@ public class AccurevSCMFileSystem extends SCMFileSystem {
                 );
                 accurevClient.setCredentials(credentials);
             }
-
             String headName;
             if (rev != null) {
                 headName = rev.getHead().getName();
