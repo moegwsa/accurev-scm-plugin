@@ -55,6 +55,8 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
         return url;
     }
 
+    public String getCredentialsId() { return credentialsId; }
+
 
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
 
