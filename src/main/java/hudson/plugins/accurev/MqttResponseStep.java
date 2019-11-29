@@ -1,5 +1,10 @@
 package hudson.plugins.accurev;
 
+import com.cloudbees.plugins.credentials.CredentialsMatcher;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -8,13 +13,17 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.model.queue.Tasks;
 import hudson.plugins.accurev.util.BuildData;
+import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
+import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.tasks.SimpleBuildStep;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -27,16 +36,19 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 
 public class MqttResponseStep extends Notifier implements SimpleBuildStep{
 
 
     private final String url;
+    private final String credentialsId;
 
     @DataBoundConstructor
-    public MqttResponseStep(String url){
+    public MqttResponseStep(String url, String credentials){
         this.url = url;
+        this.credentialsId = credentials;
     }
 
     public String getUrl() {
@@ -51,9 +63,14 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
         for(Action a : run.getAllActions()) {
             if (a instanceof BuildData) buildData = (BuildData) a;
         }
+
+        StandardUsernamePasswordCredentials usernamePasswordFromCredentialId = getUsernamePasswordFromCredentialId(run);
+
         String content;
             content = this.replaceVariables("$BUILD_URL", run, listener) + "\n"
-                    + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n";
+                    + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n"
+                    + usernamePasswordFromCredentialId.getUsername() + "\n"
+                    + usernamePasswordFromCredentialId.getPassword().getPlainText();
 
         // Todo: Need to create some security so that if the buildData is empty, we can catch the empty transaction in the perl script
         String topic = "gatedStream/" + buildData.lastBuild.getMarked().getName() + "/" + buildData.lastBuild.transaction.getId();
@@ -62,7 +79,6 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
         String broker = "tcp://" + url;
         String clientId = "Jenkins MQTT";
         MemoryPersistence persistence = new MemoryPersistence();
-
         try {
             MqttClient sampleClient = new MqttClient(broker, clientId, persistence);
             MqttConnectOptions connOpts = new MqttConnectOptions();
@@ -84,6 +100,20 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
             listener.getLogger().println("cause " + me.getCause());
             listener.getLogger().println("excep " + me);
         }
+    }
+
+    private StandardUsernamePasswordCredentials getUsernamePasswordFromCredentialId(Run<?, ?> build) {
+        List<StandardUsernamePasswordCredentials> serverCredentials = CredentialsProvider.lookupCredentials(
+                StandardUsernamePasswordCredentials.class,
+                build.getParent(),
+                build.getParent() instanceof Queue.Task
+                        ? Tasks.getAuthenticationOf((Queue.Task)build.getParent())
+                        : ACL.SYSTEM,
+                URIRequirementBuilder.fromUri("").build()
+        );
+        CredentialsMatcher srcMatcher = CredentialsMatchers.withUsername(credentialsId);
+        CredentialsMatcher idMatcher = CredentialsMatchers.allOf(srcMatcher, AccurevClient.Companion.getCREDENTIALS_MATCHER());
+        return CredentialsMatchers.firstOrNull(serverCredentials, idMatcher);
     }
 
     private String replaceVariables(final String rawString, final Run<?, ?> run, final TaskListener listener)
