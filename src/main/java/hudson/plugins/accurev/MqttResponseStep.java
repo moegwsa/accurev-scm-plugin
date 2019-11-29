@@ -59,7 +59,7 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
 
         // Todo: Need to create some security so that if the buildData is empty, we can catch the empty transaction in the perl script
         final String topic = "gatedStream/" + buildData.lastBuild.getMarked().getName() + "/" + buildData.lastBuild.transaction.getId();
-        
+
         final int qualityOfService = 2;
         final String broker = "tcp://" + url;
         final String clientId = "Jenkins MQTT";
