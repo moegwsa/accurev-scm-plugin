@@ -9,11 +9,7 @@ import hudson.model.UnprotectedRootAction;
 import jenkins.scm.api.SCMEvent;
 import jenkins.scm.api.SCMHeadEvent;
 import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.HttpResponse;
-import org.kohsuke.stapler.HttpResponses;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.*;
 
 import javax.annotation.CheckForNull;
 import javax.servlet.ServletException;
@@ -28,6 +24,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static hudson.plugins.accurev.Reason.Updated;
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 
@@ -40,6 +37,7 @@ public class AccurevStatus implements UnprotectedRootAction {
     private String lastStreams = null;
     private String lastTransaction = null;
     private String lastPrincipal = null;
+    private Reason lastReason = null;
 
     @CheckForNull
     @Override
@@ -84,11 +82,13 @@ public class AccurevStatus implements UnprotectedRootAction {
                                        @QueryParameter(required = true) String port,
                                        @QueryParameter(required = false) String streams,
                                        @QueryParameter(required = false) String transaction,
-                                       @QueryParameter(required = false) String principal) throws ServletException, IOException {
+                                       @QueryParameter(required = false) String principal,
+                                       @QueryParameter(required = false) String reason) throws ServletException, IOException {
         lastHost = host;
         lastPort = port;
         lastStreams = streams;
         lastPrincipal = principal;
+        lastReason = Reason.valueOf(reason);
         URI uri;
 
         LOGGER.log(Level.FINE, "Received hook from : " + host + ", stream: " + streams);
@@ -108,10 +108,29 @@ public class AccurevStatus implements UnprotectedRootAction {
         String origin = SCMEvent.originOf(request);
         if (streamsArray.length > 0) {
             for (String stream : streamsArray) {
-                if (StringUtils.isNotBlank(stream) && StringUtils.isNotBlank(transaction)) {
-                    SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
-                            SCMEvent.Type.UPDATED, new AccurevCommitPayload(uri, stream, transaction), origin));
-                    return HttpResponses.ok();
+                switch (lastReason) {
+                    case Created:
+                        if (StringUtils.isNotBlank(stream) ) {
+                            transaction = transaction.isEmpty() ? transaction : "1";
+                            SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
+                                    SCMEvent.Type.CREATED, new AccurevCommitPayload(uri, stream, transaction), origin));
+                            return HttpResponses.ok();
+                        }
+                    case Updated:
+                        if (StringUtils.isNotBlank(stream) && StringUtils.isNotBlank(transaction)) {
+                            SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
+                                    SCMEvent.Type.UPDATED, new AccurevCommitPayload(uri, stream, transaction), origin));
+                            return HttpResponses.ok();
+                        }
+                    case Deleted:
+                        if (StringUtils.isNotBlank(stream) ) {
+                            transaction = transaction.isEmpty() ? transaction : "1";
+                            SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
+                                    SCMEvent.Type.REMOVED, new AccurevCommitPayload(uri, stream, transaction), origin));
+                            return HttpResponses.ok();
+                        }
+                    default:
+                        return  HttpResponses.error(408,"No suitable Command found");
                 }
             }
         }

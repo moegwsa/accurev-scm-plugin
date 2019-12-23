@@ -177,7 +177,7 @@
         <dependency>
             <groupId>com.github.WiMills</groupId>
             <artifactId>accurev-client-plugin</artifactId>
-            <version>0b819ed978</version>
+            <version>cdcf4655a2</version>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.jenkins.plugins.accurev</groupId>-->

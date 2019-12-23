@@ -164,7 +164,7 @@ public class AccurevSCMSource extends SCMSource {
                     taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build passthrough types");
                     continue;
                 }
-                if (!context.iswantStagingStreams() && stream.getType().equals(AccurevStreamType.Staging)) {
+                if (!context.iswantGatedStreams() && stream.getType().equals(AccurevStreamType.Staging)) {
                     taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build gated streams");
                     continue;
                 }

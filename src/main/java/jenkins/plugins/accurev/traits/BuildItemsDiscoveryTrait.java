@@ -22,7 +22,7 @@ public class BuildItemsDiscoveryTrait extends AccurevSCMExtensionTrait<BuildItem
         this.setWorkspace(workspace);
         this.setSnapshot(snapshot);
         this.setPassThrough(passThrough);
-        this.setStagingStream(gatedStream);
+        this.setGatedStream(gatedStream);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class BuildItemsDiscoveryTrait extends AccurevSCMExtensionTrait<BuildItem
             ctx.wantSnapshots(isSnapshot());
             ctx.wantWorkspaces(isWorkspace());
             ctx.wantPassThroughs(isPassThrough());
-            ctx.wantStagingStreams(isStagingStream());
+            ctx.wantGatedStreams(isGatedStream());
         }
     }
 
@@ -69,11 +69,11 @@ public class BuildItemsDiscoveryTrait extends AccurevSCMExtensionTrait<BuildItem
         this.getExtension().setPassThrough(passThrough);
     }
 
-    public boolean isStagingStream() {
-        return this.getExtension().isStagingStream();
+    public boolean isGatedStream() {
+        return this.getExtension().isGatedStream();
     }
 
-    public void setStagingStream(boolean stagingStream) { this.getExtension().setStagingStream(stagingStream);
+    public void setGatedStream(boolean gatedStream) { this.getExtension().setGatedStream(gatedStream);
     }
 
     @Symbol("accurevBuildItemsDiscoveryTrait")

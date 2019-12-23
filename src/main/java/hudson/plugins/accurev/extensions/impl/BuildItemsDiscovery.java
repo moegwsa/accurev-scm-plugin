@@ -18,7 +18,7 @@ public class BuildItemsDiscovery extends AccurevSCMExtension {
     private boolean snapshot;
     private boolean workspace;
     private boolean passThrough;
-    private boolean stagingStream;
+    private boolean gatedStream;
 
     @DataBoundConstructor
     public BuildItemsDiscovery() {
@@ -60,12 +60,12 @@ public class BuildItemsDiscovery extends AccurevSCMExtension {
         this.passThrough = passThrough;
     }
 
-    public boolean isStagingStream() {
-        return stagingStream;
+    public boolean isGatedStream() {
+        return gatedStream;
     }
 
-    public void setStagingStream(boolean stagingStream) {
-        this.stagingStream = stagingStream;
+    public void setGatedStream(boolean gatedStream) {
+        this.gatedStream = gatedStream;
     }
 
     @Override

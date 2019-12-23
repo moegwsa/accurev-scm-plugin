@@ -304,6 +304,7 @@ public class AccurevSCM extends SCM implements Serializable {
         env.put(ACCUREV_STREAM, getStreams().get(0).getName());
     }
 
+
     private void computeChangeLog(AccurevClient ac, TaskListener listener, Build transactionToBuild, BuildData prevBuildData, BuildData buildData, FilePath changelogFile) {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
         try (Writer out = new OutputStreamWriter(changelogFile.write(), "UTF-8")){
@@ -350,6 +351,7 @@ public class AccurevSCM extends SCM implements Serializable {
             transToBuild = new Build(stream, markedTransaction,  candidates, build.getNumber(), null);
             buildData.saveBuild(transToBuild);
         }
+        environment.put("GIT_COMMIT" ,Long.toString(transToBuild.transaction.getId()));
 
         /**
          *
