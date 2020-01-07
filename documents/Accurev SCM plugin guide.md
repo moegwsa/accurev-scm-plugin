@@ -1,41 +1,33 @@
----
-attachments: [accurev-stream.PNG, create-item.PNG, definition-accurev.PNG, jenkinsConfig.PNG, new-item.PNG, pipeline-definition.PNG, server-cred.png, stream-def.PNG]
-tags: [Accurev, Notebooks/Guides]
-title: Accurev SCM plugin guide
-created: '2019-10-15T07:15:10.038Z'
-modified: '2019-10-15T08:12:13.985Z'
----
-
 # Accurev SCM plugin guide
 
 This guide covers how to create a pipeline using Acccurev as the primary SCM.
 
 First press new item
-![](@attachment/new-item.PNG)
+![](attachments/new-item.PNG)
 
 Insert the name of your pipeline and choose Pipeline. Press OK.
 
-![](@attachment/create-item.PNG)
+![](attachments/create-item.PNG)
 
 You have now created the template for the pipeline. Scroll down to the section "Pipeline". Click on the Definition and choose "Pipeline Script from SCM".
 
-![](@attachment/pipeline-definition.PNG)
+![](attachments/pipeline-definition.PNG)
 
 In the "SCM" dropdown menu, choose "Accurev".
 
-![](@attachment/definition-accurev.PNG)
+![](attachments/definition-accurev.PNG)
 
 Fill the Host with the host address for your Accurev server and the Port with the port number for your Accurev Server (by default 5050), and add the credentials for the user you want to check out with from Accurev.
 
-![](@attachment/server-cred.PNG)
+![](attachments/server-cred.PNG)
 
 In the Stream section you specify the streams you want to be able to check for. As an example, say you have a depot named "myTestDepot", and a child stream called "myTestStream". If you wish to build "myTestStream", then you should fill the boxes as:
 
-![](@attachment/stream-def.PNG)
+![](attachments/stream-def.PNG)
 
 When you have a layout like this:
 
-![](@attachment/accurev-stream.PNG)
+![](attachments/accurev-stream.PNG)
 
 Remember to specify the path to the Jenkinsfile. As default it resides in the root directory.
 The lightweight checkout is per default checked, as this results in the master only having to check out the Jenkinsfile, opposed to checking out the whole directory on master, and then again on the slave.
@@ -51,7 +43,7 @@ Click Save. You are now done.
 Copy the server_post_promote_hook and the jenkinsConfig.JSON files into accurev/storage/site_slice/triggers.
 
 Open the jenkinsConfig.JSON file and fill out the URL for your Jenkins server in the Host & Port fields.
-![](@attachment/jenkinsConfig.PNG)
+![](attachments/jenkinsConfig.PNG)
 
 Open your prefered commandline tool in the triggers folder and write:
 
