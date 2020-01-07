@@ -1,10 +1,3 @@
----
-tags: [Accurev]
-title: Accurev SCM plugin
-created: '2019-12-30T07:53:09.922Z'
-modified: '2019-12-30T12:09:04.099Z'
----
-
 # Accurev SCM plugin
 
 ## Tools
