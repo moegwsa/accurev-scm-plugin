@@ -35,7 +35,7 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
     private final String url;
 
     @DataBoundConstructor
-    public MqttResponseStep(String url){
+    public MqttResponseStep(final String url){
         this.url = url;
     }
 
@@ -44,40 +44,42 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
     }
 
 
-    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+    public void perform(@Nonnull final Run<?, ?> run, @Nonnull final FilePath workspace, @Nonnull final Launcher launcher, @Nonnull final TaskListener listener) throws InterruptedException, IOException {
 
         // TODO: Find a better way to access buildData
         BuildData buildData = null;
-        for(Action a : run.getAllActions()) {
+        for(final Action a : run.getAllActions()) {
             if (a instanceof BuildData) buildData = (BuildData) a;
         }
-        String content;
-            content = this.replaceVariables("$BUILD_URL", run, listener) + "\n"
-                    + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n";
+
+        // Using $RUN_DISPLAY_URL instead of $BUILD_URL due to blue ocean link.
+        final String content = this.replaceVariables("$RUN_DISPLAY_URL", run, listener) + "\n"
+                + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n";
+
 
         // Todo: Need to create some security so that if the buildData is empty, we can catch the empty transaction in the perl script
-        String topic = "gatedStream/" + buildData.lastBuild.getMarked().getName() + "/" + buildData.lastBuild.transaction.getId();
+        final String topic = "gatedStream/" + buildData.lastBuild.getMarked().getName() + "/" + buildData.lastBuild.transaction.getId();
         
-        int qualityOfService = 2;
-        String broker = "tcp://" + url;
-        String clientId = "Jenkins MQTT";
-        MemoryPersistence persistence = new MemoryPersistence();
+        final int qualityOfService = 2;
+        final String broker = "tcp://" + url;
+        final String clientId = "Jenkins MQTT";
+        final MemoryPersistence persistence = new MemoryPersistence();
 
         try {
-            MqttClient sampleClient = new MqttClient(broker, clientId, persistence);
-            MqttConnectOptions connOpts = new MqttConnectOptions();
+            final MqttClient sampleClient = new MqttClient(broker, clientId, persistence);
+            final MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);
             listener.getLogger().println("Connecting to broker: " + broker);
             sampleClient.connect(connOpts);
             listener.getLogger().println("Connected");
             listener.getLogger().println("Publishing message: " + content);
-            MqttMessage message = new MqttMessage(content.getBytes("UTF-8"));
+            final MqttMessage message = new MqttMessage(content.getBytes("UTF-8"));
             message.setQos(qualityOfService);
             sampleClient.publish(topic, message);
             listener.getLogger().println("Message published");
             sampleClient.disconnect();
             listener.getLogger().println("Disconnected");
-        } catch (MqttException me) {
+        } catch (final MqttException me) {
             listener.getLogger().println("reason " + me.getReasonCode());
             listener.getLogger().println("msg " + me.getMessage());
             listener.getLogger().println("loc " + me.getLocalizedMessage());
@@ -102,23 +104,23 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
     }
 
     @Override
-    public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
+    public boolean prebuild(final AbstractBuild<?, ?> build, final BuildListener listener) {
         return false;
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, final BuildListener listener) throws InterruptedException, IOException {
         return false;
     }
 
     @Override
-    public Action getProjectAction(AbstractProject<?, ?> project) {
+    public Action getProjectAction(final AbstractProject<?, ?> project) {
         return null;
     }
 
     @Nonnull
     @Override
-    public Collection<? extends Action> getProjectActions(AbstractProject<?, ?> project) {
+    public Collection<? extends Action> getProjectActions(final AbstractProject<?, ?> project) {
         return project.getActions();
     }
 
@@ -127,7 +129,7 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
         @Override
-        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+        public boolean isApplicable(final Class<? extends AbstractProject> jobType) {
             return true;
         }
     }

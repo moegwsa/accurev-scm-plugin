@@ -43,7 +43,7 @@ public class AccurevSCMSourceTest {
         jenkins.getInstance().add(scmSourceOwner, "accurevSourceOwner");
 
 
-        accurevStatus.doNotifyCommit(mock(HttpServletRequest.class), REMOTEHOST, REMOTEPORT, "master", "10", "testPrincipal");
+        accurevStatus.doNotifyCommit(mock(HttpServletRequest.class), REMOTEHOST, REMOTEPORT, "master", "10", "testPrincipal", "");
 
         SCMHeadEvent event =
                 jenkins.getInstance().getExtensionList(SCMEventListener.class).get(SCMEventListenerImpl.class)

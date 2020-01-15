@@ -7,7 +7,6 @@
         <version>3.49</version>
         <relativePath />
     </parent>
-    <!--<groupId>io.jenkins.plugins</groupId> -->
     <groupId>jenkins-plugins</groupId>
     <artifactId>accurev-scm</artifactId>
     <version>1.4-SNAPSHOT</version>
@@ -15,8 +14,6 @@
     <properties>
         <jenkins.version>2.176.3</jenkins.version>
         <java.level>8</java.level>
-<!--        <java.version>1.8</java.version>-->
-        <!--<plugin.minimumJavaVersion>11</plugin.minimumJavaVersion> -->
         <paho.version>1.2.1</paho.version>
     </properties>
     <name>Accurev plugin</name>
@@ -27,18 +24,6 @@
             <url>https://opensource.org/licenses/MIT</url>
         </license>
     </licenses>
-    <!--    <profiles>-->
-    <!--        <profile>-->
-    <!--            <id>artifactory</id>-->
-    <!--            <distributionManagement>-->
-    <!--                <repository>-->
-    <!--                    <id>maven-playground</id>-->
-    <!--                    <name>maven-playground</name>-->
-    <!--                    <url>https://testartifactory.widex.io</url>-->
-    <!--                </repository>-->
-    <!--            </distributionManagement>-->
-    <!--        </profile>-->
-    <!--    </profiles>-->
     <build>
         <plugins>
             <plugin>
@@ -65,57 +50,6 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-compiler-plugin</artifactId>-->
-<!--                <version>3.8.1</version>-->
-<!--                <configuration>-->
-<!--                    <release>1.8</release>-->
-<!--                    <source>1.8</source>-->
-<!--                    <target>1.8</target>-->
-<!--                    <encoding>UTF-8</encoding>-->
-<!--                </configuration>-->
-
-<!--            </plugin>-->
-            <!--            <plugin>-->
-            <!--                <groupId>org.jenkins-ci.tools</groupId>-->
-            <!--                <artifactId>maven-hpi-plugin</artifactId>-->
-            <!--                <configuration>-->
-            <!--                    <disabledTestInjection>true</disabledTestInjection>-->
-            <!--                </configuration>-->
-            <!--            </plugin>-->
-            <!--            <plugin>-->
-            <!--                <groupId>org.jfrog.buildinfo</groupId>-->
-            <!--                <artifactId>artifactory-maven-plugin</artifactId>-->
-            <!--                <version>2.6.1</version>-->
-            <!--                <inherited>false</inherited>-->
-            <!--                <executions>-->
-            <!--                    <execution>-->
-            <!--                        <id>build-info</id>-->
-            <!--                        <goals>-->
-            <!--                            <goal>publish</goal>-->
-            <!--                        </goals>-->
-            <!--                        <configuration>-->
-            <!--                            <deployProperties>-->
-            <!--                                <gradle>awesome</gradle>-->
-            <!--                            </deployProperties>-->
-            <!--                            <artifactory>-->
-            <!--                                <includeEnvVars>true</includeEnvVars>-->
-            <!--                                <envVarsExcludePatterns>*password*,*secret*,*key*,*token*,*passphrase*</envVarsExcludePatterns>-->
-            <!--                                <timeoutSec>60</timeoutSec>-->
-            <!--                            </artifactory>-->
-            <!--                            <publisher>-->
-            <!--                                <contextUrl>https://testartifactory.widex.io</contextUrl>-->
-            <!--                                <repoKey>maven-playground</repoKey>-->
-            <!--                                <username>${testartifactory.username}</username>-->
-            <!--                                <password>${testartifactory.password}</password>-->
-            <!--                                <snapshotRepoKey>maven-playground</snapshotRepoKey>-->
-            <!--                                <includePatterns>*.hpi</includePatterns>-->
-            <!--                            </publisher>-->
-            <!--                        </configuration>-->
-            <!--                    </execution>-->
-            <!--                </executions>-->
-            <!--            </plugin>-->
         </plugins>
     </build>
     <developers>
@@ -404,6 +338,12 @@
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-multibranch</artifactId>
             <version>2.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-cps-global-lib</artifactId>
+            <version>2.14</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <reporting>

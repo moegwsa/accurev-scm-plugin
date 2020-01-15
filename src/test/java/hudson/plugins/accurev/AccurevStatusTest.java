@@ -65,7 +65,7 @@ public class AccurevStatusTest {
     public void testDoNotifyCommitWithNoStreams() throws Exception {
         
         AccurevTrigger aMasterTrigger = setupProjectWithTrigger("host", "8080", "", "depot", false);
-        HttpResponse httpResponse= this.accurevStatus.doNotifyCommit(requestWithNoParameters, "host", "8080", "", null, "testPrincipal");
+        HttpResponse httpResponse= this.accurevStatus.doNotifyCommit(requestWithNoParameters, "host", "8080", "", null, "testPrincipal", "Updated");
 
         assertEquals("HOST: host PORT: 8080 Streams: ", this.accurevStatus.toString());
     }
@@ -76,9 +76,9 @@ public class AccurevStatusTest {
         AccurevTrigger aMasterTrigger = setupProjectWithTrigger("host", "8080", "stream1", "depot", false);
 
         AccurevStatus spy = Mockito.spy(new AccurevStatus());
-        spy.doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal");
+        spy.doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal", "Updated");
 
-        Mockito.verify(spy).doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal");
+        Mockito.verify(spy).doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal", "Updated");
         assertEquals("HOST: host PORT: 8080 Streams: stream1", spy.toString());
     }
 
@@ -92,10 +92,10 @@ public class AccurevStatusTest {
 
         AccurevStatus spy = Mockito.spy(new AccurevStatus());
 
-        spy.doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal");
+        spy.doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal", "Updated");
 
 
-        Mockito.verify(spy).doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal");
+        Mockito.verify(spy).doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1", "1", "testPrincipal", "Updated");
 
         assertEquals("HOST: host PORT: 8080 Streams: stream1", spy.toString());
     }
@@ -108,10 +108,10 @@ public class AccurevStatusTest {
         AccurevTrigger cMasterTrigger = setupProjectWithTrigger("host", "8080", "stream3", "depot", false);
 
         AccurevStatus spy = Mockito.spy(new AccurevStatus());
-        spy.doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1,stream2", "1", "testPrincipal");
+        spy.doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1,stream2", "1", "testPrincipal", "Updated");
 
 
-        Mockito.verify(spy).doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1,stream2", "1", "testPrincipal");
+        Mockito.verify(spy).doNotifyCommit(requestWithNoParameters, "host", "8080", "stream1,stream2", "1", "testPrincipal", "Updated");
 
         assertEquals("HOST: host PORT: 8080 Streams: stream1,stream2", spy.toString());
     }
