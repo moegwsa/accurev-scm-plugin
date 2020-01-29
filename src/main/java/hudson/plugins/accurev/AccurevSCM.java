@@ -34,7 +34,6 @@ import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.jetbrains.annotations.NotNull;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -76,6 +75,8 @@ public class AccurevSCM extends SCM implements Serializable {
 
     private static final String ACCUREV_STREAM = "ACCUREV_STREAM";
     private static final String ACCUREV_TRANSACTION = "ACCUREV_TRANSACTION";
+    private static final String ACCUREV_SERVER = "ACCUREV_SERVER";
+    private static final String ACCUREV_PORT = "ACCUREV_PORT";
 
     public AccurevSCM(String source) {
         this.source = source;
@@ -128,6 +129,8 @@ public class AccurevSCM extends SCM implements Serializable {
         depotList.add(new ServerRemoteConfig(host, port, credentialsId));
         return depotList;
     }
+
+
 
     @Override
     public PollingResult compareRemoteRevisionWith(Job<?, ?> project, Launcher launcher, FilePath workspace, final @NonNull TaskListener listener, @NotNull SCMRevisionState baseline) throws IOException, InterruptedException {
@@ -237,11 +240,12 @@ public class AccurevSCM extends SCM implements Serializable {
         listener.getLogger().println("Building stream:" + getStreams().get(0).getName());
         BuildData prevBuildData = getBuildData(build.getPreviousBuild());
         BuildData buildData = copyBuildData(build.getPreviousBuild());
+        BuildData buildData1 = getBuildData(build);
         if (VERBOSE && buildData.lastBuild != null) {
             listener.getLogger().println("Last Built TransactionId: " + buildData.lastBuild.transaction);
         }
-
         EnvVars environment = build.getEnvironment(listener);
+
         listener.getLogger().println("builder is: " + build.getClass().getName());
 
         for (String envName : environment.keySet()) {
@@ -302,19 +306,18 @@ public class AccurevSCM extends SCM implements Serializable {
             AccurevTransaction transaction = getBuildData(build).getLastBuiltTransaction();
             env.put(ACCUREV_STREAM, getStreams().get(0).getName());
             env.put(ACCUREV_TRANSACTION, Long.toString(transaction.getId()));
-            LOGGER.log(Level.WARNING, String.valueOf(env.size()));
-            for (String envName : env.keySet()) {
-                LOGGER.log(Level.WARNING, (String.format("%s=%s%n", envName, env.get(envName))));
+            for (ServerRemoteConfig config : serverRemoteConfigs) {
+                env.put(ACCUREV_SERVER, config.getHost());
+                env.put(ACCUREV_PORT, config.getPort());
             }
+
             if (build instanceof AbstractBuild) {
                 buildEnvVars((AbstractBuild) build, env );
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "failed to load environment" + e.getMessage());
         }
-        super.buildEnvironment(build,env);
     }
-
 
 
     private void computeChangeLog(AccurevClient ac, TaskListener listener, Build transactionToBuild, BuildData prevBuildData, BuildData buildData, FilePath changelogFile) {
