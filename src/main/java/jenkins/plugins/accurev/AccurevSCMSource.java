@@ -12,11 +12,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.Item;
-import hudson.model.Node;
-import hudson.model.Project;
-import hudson.model.Queue;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.model.queue.Tasks;
 import hudson.plugins.accurev.AccurevSCMRevision;
 import hudson.scm.SCM;
@@ -27,28 +23,16 @@ import jenkins.model.Jenkins;
 import jenkins.plugins.accurev.traits.BuildItemsDiscoveryTrait;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
-import jenkins.plugins.accurevclient.AccurevException;
 import jenkins.plugins.accurevclient.model.AccurevStream;
-import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevStreams;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
-import jenkins.scm.api.SCMFile;
-import jenkins.scm.api.SCMHead;
-import jenkins.scm.api.SCMHeadEvent;
-import jenkins.scm.api.SCMHeadObserver;
-import jenkins.scm.api.SCMProbe;
-import jenkins.scm.api.SCMProbeStat;
-import jenkins.scm.api.SCMRevision;
-import jenkins.scm.api.SCMSource;
-import jenkins.scm.api.SCMSourceCriteria;
-import jenkins.scm.api.SCMSourceDescriptor;
+import jenkins.scm.api.*;
 import jenkins.scm.api.trait.SCMSourceRequest;
 import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMSourceTraitDescriptor;
 import jenkins.scm.impl.form.NamedArrayList;
 import jenkins.scm.impl.trait.Discovery;
 import jenkins.scm.impl.trait.Selection;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
@@ -63,7 +47,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 
 public class AccurevSCMSource extends SCMSource {
@@ -199,6 +182,8 @@ public class AccurevSCMSource extends SCMSource {
 //        }
         return super.retrieve(revision,taskListener,context);
     }
+
+
 
     @NonNull
     @Override
