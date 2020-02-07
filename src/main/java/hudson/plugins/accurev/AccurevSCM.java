@@ -291,7 +291,7 @@ public class AccurevSCM extends SCM implements Serializable {
 
     @Override
     public void buildEnvVars(AbstractBuild<?, ?> build, Map<String, String> env) {
-        LOGGER.log(Level.WARNING, "deprecated call to to Run.getEnvVars");
+        //LOGGER.log(Level.WARNING, "deprecated call to to Run.getEnvVars");
         buildEnvironment(build, env);
     }
 
@@ -307,9 +307,9 @@ public class AccurevSCM extends SCM implements Serializable {
                 env.put(ACCUREV_PORT, config.getPort());
             }
 
-            if (build instanceof AbstractBuild) {
-                buildEnvVars((AbstractBuild) build, env );
-            }
+//            if (build instanceof AbstractBuild) {
+//                buildEnvVars((AbstractBuild) build, env );
+//            }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "failed to load environment" + e.getMessage());
         }
@@ -508,9 +508,9 @@ public class AccurevSCM extends SCM implements Serializable {
     @Override
     public SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?, ?> build, @Nullable FilePath workspace, @Nullable Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
         EnvVars env = build.getEnvironment(listener);
-        if (workspace == null) {
-            throw new IOException("Workspace not specified");
-        }
+//        if (workspace == null) {
+//            throw new IOException("Workspace not specified");
+//        }
         return SCMRevisionState.NONE;
     }
 

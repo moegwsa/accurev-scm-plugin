@@ -1,7 +1,7 @@
 version: '3.5'
 services:
   accurev:
-    image: wimill/accurev
+    image: ehhnwidex/accurev
     container_name: accurev
     ports:
       - "5050:5050"
