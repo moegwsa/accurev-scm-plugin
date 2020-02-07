@@ -4,7 +4,8 @@ import jdk.Exported;
 
 @Exported
 public enum Reason {
-    Created,
-    Updated,
-    Deleted
+    NONE,
+    CREATED,
+    UPDATED,
+    DELETED
 }

@@ -1,14 +1,16 @@
-version: "3.7"
+version: '3.5'
 services:
   accurev:
-    image: wimill/accurev
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile-accurev
+    image: accurev
     container_name: accurev
     ports:
       - "5050:5050"
       - "8883:1883"
+    volumes:
+      - type: bind
+        source: './triggers'
+        target: '/home/accurev-user/triggers'
+        read_only: true
     healthcheck:
       test: ./accurev/bin/accurev info
       interval: 10s

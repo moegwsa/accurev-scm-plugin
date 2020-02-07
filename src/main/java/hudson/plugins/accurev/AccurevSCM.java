@@ -248,10 +248,6 @@ public class AccurevSCM extends SCM implements Serializable {
 
         listener.getLogger().println("builder is: " + build.getClass().getName());
 
-        for (String envName : environment.keySet()) {
-            LOGGER.log(Level.WARNING, (String.format("%s=%s%n", envName, environment.get(envName))));
-        }
-
         createClient(listener, environment, build, workspace, launcher);
 
 

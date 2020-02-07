@@ -87,7 +87,9 @@ public class AccurevStatus implements UnprotectedRootAction {
         lastPort = port;
         lastStreams = streams;
         lastPrincipal = principal;
-        lastReason = Reason.valueOf(reason);
+        if (reason != null){
+            lastReason = Reason.valueOf(reason.toUpperCase());
+        }
         URI uri;
 
         LOGGER.log(Level.FINE, "Received hook from : " + host + ", stream: " + streams);
@@ -107,21 +109,22 @@ public class AccurevStatus implements UnprotectedRootAction {
         String origin = SCMEvent.originOf(request);
         if (streamsArray.length > 0) {
             for (String stream : streamsArray) {
-                switch (lastReason) {
-                    case Created:
+                switch (lastReason != null ? lastReason : Reason.NONE ) {
+                    case CREATED:
                         if (StringUtils.isNotBlank(stream) ) {
                             transaction = transaction.isEmpty() ? transaction : "1";
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.CREATED, new AccurevCommitPayload(uri, stream, transaction), origin));
                             return HttpResponses.ok();
                         }
-                    case Updated:
+                    case UPDATED:
                         if (StringUtils.isNotBlank(stream) && StringUtils.isNotBlank(transaction)) {
+                            System.out.println("notifier is updated");
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.UPDATED, new AccurevCommitPayload(uri, stream, transaction), origin));
                             return HttpResponses.ok();
                         }
-                    case Deleted:
+                    case DELETED:
                         if (StringUtils.isNotBlank(stream) ) {
                             transaction = transaction.isEmpty() ? transaction : "1";
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(

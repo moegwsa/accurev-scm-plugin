@@ -14,7 +14,7 @@ if(not defined $port){
   exit(0);
 }
 
-my $file = glob('~/accurev/storage/site_slice/triggers/jenkinsConfig.JSON');
+my $file = glob('~/accurev/storage/site_slice/triggers/jenkinsConfig.json');
 my $json;
 {
   local $/; #Enable 'slurp' mode
@@ -25,10 +25,11 @@ my $json;
 my $data = decode_json($json);
 $data->{'config'}->{'port'} = $port;
 
-if(defined $host){
-  $data->{'config'}->{'host'} = $host;
+if(not defined $host){
+  $host = "localhost";
 }
-
+my $url = "$host:$port";
+$data->{'config'}->{'url'} = $url;
 my $json_text = encode_json($data);
 
 open(my $fh, ">", $file);

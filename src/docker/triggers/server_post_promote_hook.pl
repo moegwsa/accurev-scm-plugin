@@ -56,9 +56,16 @@ use File::Basename;
 use XML::Simple;
 use LWP::UserAgent ();
 
+use File::Copy;
+use File::Path qw(make_path);
+
 use Encode qw(encode_utf8);
 use HTTP::Request ();
 use JSON::MaybeXS qw(encode_json);
+use lib dirname (__FILE__);
+use warnings;
+use JenkinsHook;
+use JenkinsHook('updateCrumb');
 
 sub main
 {
@@ -150,7 +157,8 @@ sub main
     #######################################################
 
     # Validate that the script user is logged in
-    my $loginStatus = `$::AccuRev secinfo`;
+    my $loginStatus = `accurev secinfo`;
+    #my $loginStatus = system("$::AccuRev secinfo");
     chomp ($loginStatus);
     if ($loginStatus eq "notauth") {
             print "server_post_promote_trig: script user is not logged in.\n";
@@ -182,97 +190,16 @@ sub main
     #
     # Windows:
     # system("$::AccuRevBin\\server_ot_promote", $file, $file2);
+	copyInputFile($file2, $stream, $transaction_num, $principal);
+	
+	system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"".generateCustomIcon("running", "", "Processing transaction $transaction_num")."\"");
+    my $command = "gatingAction";
+    createWebhook($command, $stream, $depot, $transaction_num);
 
-
-    use Socket;
-    # Fetch docker host IP adress through Docker network, located at host.docker.internal
-  	my $host = inet_ntoa(inet_aton("host.docker.internal"));
-    # Get the port, standard from docker-compose file is set to 8081. Run changeJenkinsUrl PORT_NUM to chagne
-    my $port = $ENV{'JENKINS_PORT'};
-
-    binmode STDOUT, ":utf8";
-    use utf8;
-    use JSON qw//;
-    my $json = JSON->new->utf8;
-    print "Reading port info\n";
-    my $file = "triggers/jenkinsConfig.JSON";
-    my $data;
-      {
-        local $/; #Enable 'slurp' mode
-
-        open my $fh, "<", $file or die $!;
-        $data = <$fh>;
-        close $fh;
-      }
-      my $jenkinsConfig = $json->decode($data);
-
-      my $jPort = $jenkinsConfig->{'config'}->{'port'};
-      my $jHost = $jenkinsConfig->{'config'}->{'host'};
-
-    if($jPort ne ''){
-      $port = $jPort;
-    }
-
-    if($jHost ne ''){
-      $host = $jHost;
-    }
-
-	my $ua = LWP::UserAgent->new;
-  my $url ="http://$host:$port";
-
-  my $crumb = $jenkinsConfig->{'config'}->{'authentication'}->{'crumb'};
-  my $crumbRequestField = $jenkinsConfig->{'config'}->{'authentication'}->{'crumbRequestField'};
-  if($crumb eq '') {
-    print "No crumb detected, obtaining crumb\n";
-    my ($crumbResponse, $crumbRequestFieldResponse) = updateCrumb($url, $ua);
-    $crumb = $crumbResponse;
-    $crumbRequestField = $crumbRequestFieldResponse;
-    print "Crumb: " . $crumb . "\n";
-    print "crumbRequestField: " . $crumbRequestField . "\n";
-
-    $jenkinsConfig->{'config'}->{'authentication'}->{'crumb'} = $crumb;
-    $jenkinsConfig->{'config'}->{'authentication'}->{'crumbRequestField'} = $crumbRequestField;
-  }
-
-  $json = $json->pretty([1]);
-
-  my $json_text = $json->encode($jenkinsConfig);
-
-  print $json_text . "\n";
-  open(my $fh, ">", $file);
-  print $fh $json_text;
-  close $fh;
-
-
-  print "Url triggered: $url \n";
-	print "Hook was triggered on stream: $stream - Transaction number: $transaction_num - Promoted by: $principal \n";
-	#print "Sent to: $url \n";
-
-	my $xmlInput = `accurev info -fx`;
-	my $accurevInfo = XMLin($xmlInput);
-
-  my $url = $url . "/jenkins/accurev/notifyCommit/";
-
-  my $headers = HTTP::Headers->new(
-    $crumbRequestField => $crumb,
-  );
-
-  $ua->default_headers($headers);
-	# WHEN NOT TESTING ON LOCALHOST, USE $accurevInfo->{serverName} FOR HOST
-	my $res = $ua->post($url, {'host' => 'localhost', 'port' => $accurevInfo->{serverPort}, 'streams' => $stream, 'transaction' => $transaction_num, 'principal' => $principal});
-
-  use HTTP::Status ();
-
-
-	#The useragent can have a timeout if two requests are send too fast - Find a way to solve
-	if ($res->is_error) {
-		print $res->code;
-    print $res->message;
-		if($res->code == HTTP::Status::HTTP_REQUEST_TIMEOUT) {
-			print "We hit a timeout\n";
-		}
-	}
-
+	# $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
+	
+	my $result = 'running';
+	system("$::AccuRev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
     # STEP 9 of 9:
     #   If you would like email notification of changes made
     #   uncomment the following line and make sure email_post_promote.pl (unix)
@@ -295,16 +222,21 @@ sub main
 
 }
 
-sub updateCrumb($$) {
-  my ($url, $ua) = ($_[0], $_[1]);
-  binmode STDOUT, ":utf8";
-  use utf8;
-  use JSON qw//;
-  my $json = JSON->new->utf8;
-  my $res = $ua->get($url . "/jenkins/crumbIssuer/api/json");
-  my $res_json = $json->decode($res->decoded_content);
-
-  return ($res_json->{'crumb'}, $res_json->{'crumbRequestField'});
+sub generateCustomIcon($$$) {
+   my($xml);
+   my($status, $url, $tooltip) = ($_[0], $_[1], $_[2]);
+   $xml = "<streamicon>";
+   if (length($status) gt 0) {
+      $xml = $xml . "<image>" . $status . "</image>";
+   }
+   if (length($url) gt 0) {
+      $xml = $xml . "<clickurl>" . $url . "</clickurl>";
+   }
+   if (length($tooltip) gt 0) {
+      $xml = $xml . "<tooltip>" . $tooltip . "</tooltip>";
+   }
+   $xml = $xml . "</streamicon>";
+   return $xml;
 }
 
 
