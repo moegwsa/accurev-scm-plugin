@@ -68,6 +68,11 @@ use Data::Dumper;
 use strict;
 use File::Copy;
 
+use File::Basename;
+use lib dirname (__FILE__);
+use JenkinsHook;
+use JenkinsHook('updateCrumb');
+
 sub main
 {
     my ($file, $xmlinput_raw, $xmlinput);
@@ -326,7 +331,7 @@ sub main
         # #end of EXAMPLE VALIDATION
 
 	createWebhook($command, $stream1, $depot, $principal);
-  
+
 
     # # no problems, allow command to proceed
     close TIO;
@@ -446,7 +451,6 @@ sub main
         #     exit(1);
         # }
         # end of EXAMPLE VALIDATION
-        #createWebhook($command, $stream1, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);

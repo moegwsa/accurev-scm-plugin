@@ -180,9 +180,9 @@ public class IntegrationTest {
         files.add(file.getAbsolutePath());
         client.add().add(files).comment("test").execute();
         client.promote().files(files).comment("test").execute();
-        Thread.sleep(4000);
-        String t = getTriggerLog();
-        System.out.println(t);
+        Thread.sleep(20000);
+        String tl = getTriggerLog();
+        System.out.println(tl);
         assertEquals(1, project.getLastBuild().number);
     }
 
@@ -287,8 +287,9 @@ public class IntegrationTest {
 
         // We need to give Accurev a chance to parse the newly committed file and issue a trigger
         Thread.sleep(20000);
-        String t = getTriggerLog();
-        assertTrue(t.contains("server_post_promote triggered"));
+        String tl = getTriggerLog();
+        System.out.println(tl);
+        assertTrue(tl.contains("server_post_promote triggered"));
         // Check we received a webhook and built the job
         assertEquals(2, project.getLastBuild().number);
         String bl = getBrokerLog();

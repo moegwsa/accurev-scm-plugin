@@ -24,6 +24,7 @@ import jenkins.plugins.accurev.traits.BuildItemsDiscoveryTrait;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.model.AccurevStream;
+import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevStreams;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import jenkins.scm.api.*;
@@ -138,6 +139,26 @@ public class AccurevSCMSource extends SCMSource {
             for (AccurevStream stream : streams.getList()) {
 
                 taskListener.getLogger().println("Processing object: " + stream.getName());
+                if (!context.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
+                    continue;
+                }
+                if (!context.isWantWorkspaces() && stream.getType().equals(AccurevStreamType.Workspace)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build workspaces");
+                    continue;
+                }
+                if (!context.isWantSnapshots() && stream.getType().equals(AccurevStreamType.Snapshot)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build snapshots");
+                    continue;
+                }
+                if (!context.isWantPassThroughs() && stream.getType().equals(AccurevStreamType.PassThrough)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build passthrough types");
+                    continue;
+                }
+                if (!context.iswantGatedStreams() && stream.getType().equals(AccurevStreamType.Staging)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build gated streams");
+                    continue;
+                }
 
                 AccurevTransaction highest = accurevClient.fetchTransaction(stream.getName());
                 SCMHead head = new SCMHead(stream.getName());
@@ -340,10 +361,10 @@ public class AccurevSCMSource extends SCMSource {
                 try {
                     client.login().username(credentials.getUsername()).password(credentials.getPassword()).execute();
                 } catch (Exception e) {
-                    FormValidation.error(e.getMessage());
+                    return FormValidation.error(e.getMessage());
                 }
             }
-            return !client.getInfo().getPrincipal().equals("(not logged in") ? FormValidation.ok("Success") : FormValidation.error("Could not log in");
+            return !client.getInfo().getPrincipal().equals("not logged in") ? FormValidation.ok("Success") : FormValidation.error("Could not log in");
 
         }
 

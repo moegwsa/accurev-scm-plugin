@@ -55,14 +55,17 @@ sub createWebhook {
 			print "Updating Jenkins configuration file with newly obtained crumb.\n";
 			updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 			$crumb = $crumbUpdated;
+            print "crumb is $crumb \n";
 			$crumbRequestField = $crumbRequestFieldUpdated;
 		}
 	} else {
 		print "No Jenkins configuration file found, defaulting to localhost.\n";
 	}
-	my $urlToJenkins ="http://$url/jenkins/accurev/notifyCommit/";
+  
+	my $urlToJenkins ="http://$url/accurev/notifyCommit/";
     print "Attempting to notify $urlToJenkins \n";
 	my $userAgent = LWP::UserAgent->new;
+  
 	# Set timeout for post calls to 10 seconds.
 	$userAgent->timeout(10);
 	$userAgent->default_header($crumbRequestField => $crumb);
@@ -119,7 +122,7 @@ sub messageSucceeded {
 
 sub updateCrumb {
 	my ($url) = @_;
-	my $urlToJenkinsApi ="http://$url/jenkins/crumbIssuer/api/json";
+	my $urlToJenkinsApi ="http://$url/crumbIssuer/api/json";
     print "$urlToJenkinsApi \n";
 	my $json = JSON->new->utf8;
 	my $userAgent = LWP::UserAgent->new;

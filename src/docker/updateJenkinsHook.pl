@@ -28,7 +28,7 @@ $data->{'config'}->{'port'} = $port;
 if(not defined $host){
   $host = "localhost";
 }
-my $url = "$host:$port";
+my $url = "$host:$port/Jenkins";
 $data->{'config'}->{'url'} = $url;
 my $json_text = encode_json($data);
 

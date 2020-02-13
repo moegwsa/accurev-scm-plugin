@@ -245,9 +245,6 @@ public class AccurevSCM extends SCM implements Serializable {
             listener.getLogger().println("Last Built TransactionId: " + buildData.lastBuild.transaction);
         }
         EnvVars environment = build.getEnvironment(listener);
-
-        listener.getLogger().println("builder is: " + build.getClass().getName());
-
         createClient(listener, environment, build, workspace, launcher);
 
 

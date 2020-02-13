@@ -1,5 +1,5 @@
 {
    "config" : {
-      "url" : "localhost:8081"
+      "url" : "host.docker.internal:8080/jenkins"
    }
 }
