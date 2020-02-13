@@ -1,0 +1,5 @@
+{
+   "config" : {
+      "url" : "host.docker.internal:8080/jenkins"
+   }
+}

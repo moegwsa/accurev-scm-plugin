@@ -8,15 +8,11 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
-import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.FreeStyleProject;
 import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.StreamSpec;
-import hudson.plugins.accurev.extensions.AccurevSCMExtension;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
-import hudson.security.csrf.DefaultCrumbIssuer;
 import hudson.triggers.SCMTrigger;
-import hudson.util.OneShotEvent;
 import jenkins.plugins.accurevclient.AccurevClient;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -28,13 +24,9 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.LoggerRule;
-import org.jvnet.hudson.test.TestBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -45,18 +37,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class IntegrationTest {
 
@@ -66,6 +53,7 @@ public class IntegrationTest {
     @Rule
     public DockerComposeRule docker = DockerComposeRule.builder()
             .file("src/docker/docker-compose.yml")
+            .saveLogsTo("src/docker/logs")
             .build();
 
     String host = "localhost";
@@ -93,7 +81,7 @@ public class IntegrationTest {
     public void setUp() throws IOException, InterruptedException {
         // Get the port from the JenkinsRule - When JenkinsRule runs it starts Jenkins at a random port
         String jenkinsPort = Integer.toString(rule.getURL().getPort());
-        // For docker.exec command, no options needed.
+        //        // For docker.exec command, no options needed.
         DockerComposeExecOption options = new DockerComposeExecOption() {
             @Override
             public List<String> options() {
@@ -109,10 +97,11 @@ public class IntegrationTest {
                 arg.add("perl");
                 arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
+                arg.add("host.docker.internal");
                 return arg;
             }
         };
-        docker.exec(options, "accurev", arguments);
+        String out = docker.exec(options, "accurev", arguments);
 
         // For docker.exec command, no options needed.
         options = new DockerComposeExecOption() {
@@ -127,12 +116,37 @@ public class IntegrationTest {
             public List<String> arguments() {
                 List<String> arg = new ArrayList<>();
                 arg.add("cat");
-                arg.add("accurev/storage/site_slice/triggers/jenkinsConfig.JSON");
+                arg.add("accurev/storage/site_slice/triggers/jenkinsConfig.json");
                 return arg;
             }
         };
+        String output = (docker.exec(options, "accurev", arguments));
         assertTrue((docker.exec(options, "accurev", arguments).contains(jenkinsPort)));
 
+    }
+
+    @Test
+    public void testContainerConnectionToJenkins() throws Exception{
+        String jenkinsUrl = rule.getURL().toString().replace("localhost","host.docker.internal");
+        DockerComposeExecOption options = new DockerComposeExecOption() {
+            @Override
+            public List<String> options() {
+                return Collections.emptyList();
+            }
+        };
+
+        // Exec into the container, checking if the container can see jenkins
+        DockerComposeExecArgument arguments = new DockerComposeExecArgument() {
+            @Override
+            public List<String> arguments() {
+            List<String> arg = new ArrayList<>();
+            arg.add("curl");
+            arg.add("-Is");
+            arg.add(jenkinsUrl);
+            return arg;
+            }
+        };
+        assertTrue(docker.exec(options, "accurev", arguments).contains("200"));
     }
 
 
@@ -166,8 +180,9 @@ public class IntegrationTest {
         files.add(file.getAbsolutePath());
         client.add().add(files).comment("test").execute();
         client.promote().files(files).comment("test").execute();
-        Thread.sleep(4000);
-        String t = getTriggerLog();
+        Thread.sleep(20000);
+        String tl = getTriggerLog();
+        System.out.println(tl);
         assertEquals(1, project.getLastBuild().number);
     }
 
@@ -194,7 +209,8 @@ public class IntegrationTest {
         sendMQTTMessage(topic, content);
 
         String brokerLog = getBrokerLog();
-        assertTrue(brokerLog.contains("Transaction number: " + transaction));
+        System.out.println(brokerLog);
+        assertTrue(brokerLog.contains("Transaction built: " + transaction));
         assertTrue(brokerLog.contains(depot));
 
         assertEquals("success", getStreamBuiltState(depot));
@@ -208,7 +224,7 @@ public class IntegrationTest {
         assertEquals("failed", getStreamBuiltState(depot));
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void fullTripTest() throws Exception {
         WorkflowJob project = rule.jenkins.createProject(WorkflowJob.class, "demo");
         client = AccurevTestExtensions.createClientAtDir(project.getBuildDir(), url, username, password);
@@ -241,7 +257,7 @@ public class IntegrationTest {
                         "   }\n" +
                         "   post {\n" +
                         "           always {\n" +
-                        "                   mqttResponse()\n" +
+                        "                   mqttResponse('localhost:8883')\n" +
                         "           }\n" +
                         "   }\n" +
                         "}\n", true));
@@ -270,15 +286,16 @@ public class IntegrationTest {
         client.promote().files(files).comment("test").execute();
 
         // We need to give Accurev a chance to parse the newly committed file and issue a trigger
-        Thread.sleep(4000);
-        String t = getTriggerLog();
-        assertTrue(t.contains("server_post_promote triggered"));
+        Thread.sleep(20000);
+        String tl = getTriggerLog();
+        System.out.println(tl);
+        assertTrue(tl.contains("server_post_promote triggered"));
         // Check we received a webhook and built the job
         assertEquals(2, project.getLastBuild().number);
-
+        String bl = getBrokerLog();
+        System.out.println(bl);
         // Assert that our MQTT broker has received a response from jenkins, with our newly build transaction
-        assertTrue(getBrokerLog().contains("Transaction number: 4"));
-
+        assertTrue(bl.contains("Transaction built: 4"));
         // Assert that the stream that was built now has a property for SUCCESS
         assertEquals("success", getStreamBuiltState(depot));
 
@@ -334,7 +351,7 @@ public class IntegrationTest {
         return docker.exec(options, "accurev", arguments);
     }
 
-    private String attachPromoteTrigger(String d) throws IOException, InterruptedException {
+    private String attachPromoteTrigger(String depot) throws IOException, InterruptedException {
         DockerComposeExecOption options = new DockerComposeExecOption() {
             @Override
             public List<String> options() {
@@ -348,7 +365,7 @@ public class IntegrationTest {
                 arg.add("accurev");
                 arg.add("mktrig");
                 arg.add("-p");
-                arg.add(d);
+                arg.add(depot);
                 arg.add("server-post-promote-trig");
                 arg.add("/home/accurev-user/accurev/storage/site_slice/triggers/server_post_promote_hook");
                 return arg;
@@ -369,7 +386,7 @@ public class IntegrationTest {
             public List<String> arguments() {
                 List<String> arg = new ArrayList<>();
                 arg.add("cat");
-                arg.add("accurev/storage/site_slice/logs/trigger.log");
+                arg.add("/home/accurev-user/accurev/storage/site_slice/logs/trigger.log");
                 return arg;
             }
         };

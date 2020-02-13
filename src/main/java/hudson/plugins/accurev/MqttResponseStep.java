@@ -66,6 +66,7 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
         final MemoryPersistence persistence = new MemoryPersistence();
 
         try {
+            System.out.println("publishing message to broker: " + broker );
             final MqttClient sampleClient = new MqttClient(broker, clientId, persistence);
             final MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);

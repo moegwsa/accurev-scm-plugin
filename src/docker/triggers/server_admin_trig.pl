@@ -68,6 +68,11 @@ use Data::Dumper;
 use strict;
 use File::Copy;
 
+use File::Basename;
+use lib dirname (__FILE__);
+use JenkinsHook;
+use JenkinsHook('updateCrumb');
+
 sub main
 {
     my ($file, $xmlinput_raw, $xmlinput);
@@ -325,7 +330,8 @@ sub main
         # }
         # #end of EXAMPLE VALIDATION
 
-	createWebhook($stream1, $principal, $command, $depot);
+	createWebhook($command, $stream1, $depot, $principal);
+
 
     # # no problems, allow command to proceed
     close TIO;
@@ -445,7 +451,6 @@ sub main
         #     exit(1);
         # }
         # end of EXAMPLE VALIDATION
-		createWebhook($stream1, $principal, $command, $depot);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -558,7 +563,7 @@ sub main
 
 
         # end of EXAMPLE VALIDATION
-		createWebhook($stream1, $principal, $command, $depot);
+		createWebhook($command, $stream1, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -598,9 +603,9 @@ sub main
         # end of EXAMPLE VALIDATION
 
 		if($stream3 eq '') {
-			createWebhook($stream1, $principal, $command, $depot);
+			createWebhook($command, $stream1, $depot, $principal);
 		}else{
-			createWebhook($stream3, $principal, $command, $depot);
+			createWebhook($command, $stream3, $depot, $principal);
 		}
 
 
@@ -655,7 +660,7 @@ sub main
         # }
         # end of EXAMPLE VALIDATION 2
 
-        createWebhook($stream1, $principal, $command);
+        createWebhook($command, $stream1, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -736,7 +741,7 @@ sub main
         #     exit(1);
         # }
         # end of EXAMPLE VALIDATION 3
-        createWebhook($objectName, $principal, $command, $depot);
+        createWebhook($command, $objectName, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -796,7 +801,8 @@ sub main
         #     exit(1);
         # }
         # end of EXAMPLE VALIDATION 2
-        createWebhook($objectName, $principal, $command, $depot);
+        createWebhook($command, $objectName, $depot, $principal);
+        
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -996,82 +1002,7 @@ close TIO;
 exit(0);
 }
 
-sub createWebhook($$$) {
-	my ($stream, $principal, $command, $depot) = ($_[0], $_[1], $_[2], $_[3]);
 
-  print "Calling webhook for stream $stream - done by $principal - cause: $command\n";
-	# # FOLLOWING LINE NEEDS TO BE CHANGED TO URL OF JENKINS SERVER:
-	#my $host = "http://localhost:8081";
-  use Socket;
-  # Fetch docker host IP adress through Docker network, located at host.docker.internal
-	my $host = inet_ntoa(inet_aton("host.docker.internal"));
-  # Get the port, standard from docker-compose file is set to 8081. Run changeJenkinsUrl PORT_NUM to change
-
-  my $loginStatus = `$::AccuRev secinfo`;
-
-  my $port = $ENV{'JENKINS_PORT'};
-
-  binmode STDOUT, ":utf8";
-  use utf8;
-  use JSON;
-
-  my $json;
-    {
-      local $/; #Enable 'slurp' mode
-      my $file = "triggers/jenkinsConfig.JSON";
-      open my $fh, "<", $file or die $!;
-      $json = <$fh>;
-      close $fh;
-    }
-    my $jenkinsConfig = decode_json($json);
-
-    my $jPort = $jenkinsConfig->{'config'}->{'port'};
-    my $jHost = $jenkinsConfig->{'config'}->{'host'};
-
-  if($jPort ne ''){
-    $port = $jPort;
-  }
-
-  if($jHost ne ''){
-    $host = $jHost;
-  }
-
-  print "Port that should receive message: $port\n";
-  my $url ="http://$host:$port/jenkins/accurev/notifyCommit/";
-
-	use LWP::UserAgent;
-	my $ua = LWP::UserAgent->new;
-	# Set timeout for post calls to 10 seconds.
-	$ua->timeout(10);
-
-  use URI;
-  #my $base = $ua->get($url);
-  #my $abs = URI->new_abs($url, $base->base);
-  #$ua->proxy('http', 'http://$host:8081/');
-
-	my $xmlInput = `accurev info -fx`;
-	my $accurevInfo = XMLin($xmlInput);
-
-	print "Triggered stream: $stream - Cause: $command\n";
-
-  print "Sending message to $url \n";
-	# WHEN NOT TESTING ON LOCALHOST, USE $accurevInfo->{serverName} FOR HOST
-	# Create a post call to the Jenkins server with the information regarding the stream that was promoted from
-	my $res = $ua->post($url, {'host' => 'localhost', 'port' => $accurevInfo->{serverPort}, 'streams' => $stream, 'principal' => $principal});
-
-	# use HTTP::Status ();
-  #
-  #
-	# #The useragent can have a timeout if two requests are send too fast - Find a way to solve
-	# if ($res->is_error) {
-	# 	print $res->code;
-  #   print $res->message;
-	# 	if($res->code == HTTP::Status::HTTP_REQUEST_TIMEOUT) {
-	# 		print "We hit a timeout\n";
-	# 	}
-	# }
-
-}
 
 # run main routine
 &main();
