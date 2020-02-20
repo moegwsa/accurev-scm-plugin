@@ -8,7 +8,7 @@ before_install:
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
 script:
-  - mvn clean -Dmaven.test.skip=false package
+  - mvn clean package
 
 deploy:
   provider: releases

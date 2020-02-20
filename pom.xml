@@ -27,6 +27,13 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <failOnWarning>true</failOnWarning>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.kohsuke</groupId>
                 <artifactId>access-modifier-checker</artifactId>
                 <executions>
