@@ -89,10 +89,10 @@ public class AccurevSCMStepTest {
             @Override
             public List<String> arguments() {
                 List<String> arg = new ArrayList<>();
-                //arg.add("/bin/bash");
                 arg.add("perl");
                 arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
+                arg.add("host.docker.internal");
                 return arg;
             }
         };
@@ -166,7 +166,7 @@ public class AccurevSCMStepTest {
         assertTrue(b.getArtifactManager().root().child("file2").isFile());
     }
 
-    @Test @Ignore
+    @Test
     public void changelogAndPolling() throws Exception {
         WorkflowJob p = rule.jenkins.createProject(WorkflowJob.class, "demo");
         IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
@@ -216,7 +216,8 @@ public class AccurevSCMStepTest {
 
     public void notifyCommit(JenkinsRule rule, String depot) throws Exception{
         ((SCMTrigger.DescriptorImpl)rule.jenkins.getDescriptorByType(SCMTrigger.DescriptorImpl.class)).synchronousPolling = true;
-        WebResponse webResponse = rule.createWebClient().goTo("accurev/notifyCommit?host=" + host + "&port=" + port + "&depot=" + depot + "&streams=" + depot + "&transaction=1", "text/plain").getWebResponse();
+        WebResponse webResponse = rule.createWebClient().goTo("accurev/notifyCommit?host=" + host + "&port=" + port + "&depot=" + depot + "&streams=" + depot + "&transaction=1&reason=updated", "").getWebResponse();
+        assertEquals(webResponse.getStatusCode(),200);
         // Since it takes some time to parse the request and add it to the queue, we wait for 1 sec.
         Thread.sleep(10000);
         rule.waitUntilNoActivity();

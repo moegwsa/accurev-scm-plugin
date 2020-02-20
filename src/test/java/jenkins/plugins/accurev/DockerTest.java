@@ -28,7 +28,6 @@ import java.util.Set;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-@Ignore("Only used for testing Docker instance")
 public class DockerTest {
 
     @Rule
@@ -75,7 +74,6 @@ public class DockerTest {
             @Override
             public List<String> arguments() {
                 List<String> arg = new ArrayList<>();
-                //arg.add("/bin/bash");
                 arg.add("perl");
                 arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
