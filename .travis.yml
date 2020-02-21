@@ -9,7 +9,9 @@ before_install:
   - docker ps -a
 script:
   - mvn clean package
-
+after_failure:
+  - cat target/surefire-reports/*.txt
+  - mvn surefire-report:report-only
 deploy:
   provider: releases
   api_key: $api_key

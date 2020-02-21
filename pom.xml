@@ -27,13 +27,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <failOnWarning>true</failOnWarning>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.kohsuke</groupId>
                 <artifactId>access-modifier-checker</artifactId>
                 <executions>
@@ -56,6 +49,11 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.3</version>
             </plugin>
         </plugins>
     </build>
@@ -358,7 +356,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
-                <version>3.0.0-M3</version>
+                <version>3.0.0-M4</version>
             </plugin>
         </plugins>
     </reporting>
