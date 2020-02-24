@@ -8,7 +8,7 @@ before_install:
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
 script:
-  - mvn clean package
+  - mvn -e -X clean test package
   - mvn surefire-report:report-only
 after_failure:
   - cat target/surefire-reports/*.txt
