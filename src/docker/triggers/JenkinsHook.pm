@@ -66,7 +66,7 @@ sub createWebhook {
     print "Attempting to notify $urlToJenkins \n";
 	my $userAgent = LWP::UserAgent->new;
   
-	# Set timeout for post calls to 10 seconds.
+	# Set timeout for post calls to 10 seconds.ls
 	$userAgent->timeout(10);
 	$userAgent->default_header($crumbRequestField => $crumb);
 	my $xmlInput = `accurev info -fx`;
