@@ -13,6 +13,10 @@ import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.StreamSpec;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
 import hudson.triggers.SCMTrigger;
+import jenkins.branch.BranchProperty;
+import jenkins.branch.BranchSource;
+import jenkins.branch.DefaultBranchPropertyStrategy;
+import jenkins.plugins.accurev.traits.BuildItemsDiscoveryTrait;
 import jenkins.plugins.accurevclient.AccurevClient;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -22,6 +26,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -40,6 +45,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -120,7 +127,7 @@ public class IntegrationTest {
                 return arg;
             }
         };
-        String output = (docker.exec(options, "accurev", arguments));
+        docker.exec(options, "accurev", arguments);
         assertTrue((docker.exec(options, "accurev", arguments).contains(jenkinsPort)));
 
     }
@@ -183,7 +190,8 @@ public class IntegrationTest {
         Thread.sleep(20000);
         String tl = getTriggerLog();
         System.out.println(tl);
-        assertEquals(1, project.getLastBuild().number);
+        assertEquals(1, Objects.requireNonNull(project.getLastBuild()).number);
+
     }
 
     @Test
@@ -299,6 +307,64 @@ public class IntegrationTest {
         // Assert that the stream that was built now has a property for SUCCESS
         assertEquals("success", getStreamBuiltState(depot));
 
+    }
+
+    @Test
+    public void HideEmptyStatingStreamsProjectTest() throws Exception{
+
+        rule.jenkins.disableSecurity();
+        rule.jenkins.save();
+
+        WorkflowMultiBranchProject multiProject = rule.jenkins.createProject(WorkflowMultiBranchProject.class, "demo");
+        SCMTrigger trigger = new SCMTrigger("");
+        multiProject.addTrigger(trigger);
+        trigger.start(multiProject, true);
+
+        client = AccurevTestExtensions.createClientAtDir(multiProject.getComputationDir(), url, username, password);
+        File jenkinsFile = AccurevTestExtensions.createFile(multiProject.getComputationDir().getPath(), "Jenkinsfile",  "node {checkout scm; echo 'initial content'; mqttResponse('localhost:8883')}");
+        String depot = AccurevTestExtensions.generateString(10);
+        client.depot().create(depot).execute();
+        attachPromoteTrigger(depot);
+        String workspace1 = AccurevTestExtensions.generateString(10);
+        client.workspace().create(workspace1, depot).execute();
+        List<String> files = new ArrayList<>();
+        files.add(jenkinsFile.getAbsolutePath());
+        client.add().add(files).comment("test").execute();
+        client.promote().files(files).comment("test").execute();
+
+        String stream = AccurevTestExtensions.generateString(10);
+        client.stream().create(stream, depot,true).execute();
+
+        // Add accurev credentials to store
+        IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
+        CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
+                .addCredentials(Domain.global(), c);
+
+        AccurevSCMSource accurevSCMSource = new AccurevSCMSource(null, "localhost", "5050", depot, "1");
+
+        accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,true)));
+
+        multiProject.getSourcesList().add(new BranchSource(accurevSCMSource, new DefaultBranchPropertyStrategy(new BranchProperty[0])));
+
+        multiProject.scheduleBuild2(0).getFuture().get();
+
+        rule.waitUntilNoActivity();
+
+        assertEquals(2, multiProject.getAllJobs().size());
+
+        client = AccurevTestExtensions.createClientAtDir(multiProject.getJobsDir(), url, username, password);
+
+        String workspace2 = AccurevTestExtensions.generateString(10);
+        client.workspace().create(workspace2, stream).execute();
+        File file = AccurevTestExtensions.createFile(multiProject.getJobsDir().getPath(), "File",  "initial file");
+
+        files = new ArrayList<>();
+        files.add(file.getAbsolutePath());
+        client.add().add(files).comment("test new file").execute();
+        client.promote().files(files).comment("test new file").execute();
+
+        rule.waitUntilNoActivity();
+        assertEquals(2, multiProject.getAllJobs().size());
     }
 
     private void sendMQTTMessage(String topic, String content) throws UnsupportedEncodingException {

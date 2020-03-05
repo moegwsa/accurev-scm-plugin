@@ -117,7 +117,7 @@ public class AccurevSCMSource extends SCMSource {
         AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(scmSourceCriteria, scmHeadObserver).withTraits(getTraits());
         try (AccurevSCMSourceRequest request = context.newRequest(this, taskListener)) {
 
-            Node instance = Jenkins.getInstance();
+            Node instance = Jenkins.getInstanceOrNull();
             Launcher launcher;
             if(instance != null) {
                 launcher = instance.createLauncher(taskListener);
@@ -140,23 +140,30 @@ public class AccurevSCMSource extends SCMSource {
 
                 taskListener.getLogger().println("Processing object: " + stream.getName());
                 if (!context.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
-                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
+                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
                     continue;
                 }
                 if (!context.isWantWorkspaces() && stream.getType().equals(AccurevStreamType.Workspace)) {
-                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build workspaces");
+                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build workspaces");
                     continue;
                 }
                 if (!context.isWantSnapshots() && stream.getType().equals(AccurevStreamType.Snapshot)) {
-                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build snapshots");
+                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build snapshots");
                     continue;
                 }
                 if (!context.isWantPassThroughs() && stream.getType().equals(AccurevStreamType.PassThrough)) {
-                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build passthrough types");
+                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build pass through types");
                     continue;
                 }
                 if (!context.iswantGatedStreams() && stream.getType().equals(AccurevStreamType.Staging)) {
-                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build gated streams");
+                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build gated streams");
+                    continue;
+                }
+
+                if(stream.getType().equals(AccurevStreamType.Staging) && accurevClient.getActiveElements(stream.getName()).getFiles().size() == 0){
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + "Because default group is empty");
+                    System.out.println("Discarded object: " + stream.getName() + "Because default group is empty");
+
                     continue;
                 }
 

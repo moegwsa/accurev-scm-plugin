@@ -5,6 +5,8 @@ import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.plugins.accurev.StreamSpec;
 import jenkins.plugins.accurevclient.AccurevClient;
+import jenkins.plugins.accurevclient.model.AccurevStream;
+import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 
 import java.util.Collection;
@@ -26,17 +28,25 @@ public class DefaultBuildChooser extends BuildChooser {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        //Only look at changes since current transaction when building Staging Streams.
+        long defaultBuild = 0;
+        if (ac.fetchStream(ss.getDepot(),ss.getName()).getType().equals(AccurevStreamType.Staging)){
+            defaultBuild = ac.fetchTransaction(ss.getName()).getId();
+        }
+
         Collection<AccurevTransaction> cAT = ac.getUpdatesFromAncestors(
-                ss.getDepot(),
-                ss.getName(),
-                (data.lastBuild != null ? data.lastBuild.transaction.getId() : 0) // Compare to the Transaction ID of the last build we began.
+            ss.getDepot(),
+            ss.getName(),
+            (data.lastBuild != null ? data.lastBuild.transaction.getId() : defaultBuild) // Compare to the Transaction ID of the last build we began.
         );
+
         if(!cAT.isEmpty()) listener.getLogger().println("New updates:");
         else listener.getLogger().println("No changes found");// TODO What if no changes happens, no new updates
 
         for(AccurevTransaction as : cAT){
-           listener.getLogger().println("> Transaction id: " + as.getId() + ", comment: " + as.getComment() + ", user: " + as.getUser() + ", time: " + as.getTime());
+            listener.getLogger().println("> Transaction id: " + as.getId() + ", comment: " + as.getComment() + ", user: " + as.getUser() + ", time: " + as.getTime());
         }
+
         return cAT;
     }
 
