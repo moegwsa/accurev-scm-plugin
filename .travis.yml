@@ -10,6 +10,7 @@ before_install:
 script:
   - mvn -e -Dmaven.test.skip=false -Dsurefire.useFile=false clean test package
   - mvn surefire-report:report-only
+  - cat target/surefire-reports/*.txt
 deploy:
   provider: releases
   api_key: $api_key

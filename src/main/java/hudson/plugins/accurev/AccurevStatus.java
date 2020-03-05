@@ -122,6 +122,7 @@ public class AccurevStatus implements UnprotectedRootAction {
                     case UPDATED:
                         if (StringUtils.isNotBlank(stream) && StringUtils.isNotBlank(transaction)) {
                             System.out.println("notify update action");
+
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.UPDATED, new AccurevCommitPayload(uri, stream, transaction), origin));
                             return HttpResponses.ok();
