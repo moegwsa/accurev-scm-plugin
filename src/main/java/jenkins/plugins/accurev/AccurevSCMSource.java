@@ -184,23 +184,58 @@ public class AccurevSCMSource extends SCMSource {
 
     @Override
     protected SCMRevision retrieve(@NonNull String revision, @NonNull TaskListener taskListener, @CheckForNull Item context) throws IOException, InterruptedException {
-//        try (AccurevSCMSourceRequest request = new AccurevSCMSourceContext<>(null, SCMHeadObserver.none())
-//                .withTraits(getTraits())
-//                .newRequest(this,listener)) {
-//            taskListener.getLogger().println("Building from remote source: " + remote);
-//
-//            Node instance = Jenkins.getInstance();
-//            Launcher launcher;
-//            if (instance != null) {
-//                launcher = instance.createLauncher(taskListener);
-//            } else {
-//                launcher = new Launcher.LocalLauncher(taskListener);
-//            }
-//
-//            Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
-//            accurevClient = accurev.getClient();
-//            accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
-//        }
+
+        AccurevSCMSourceContext ACcontext = new AccurevSCMSourceContext<>(null, SCMHeadObserver.none()).withTraits(getTraits());
+        try (AccurevSCMSourceRequest request = ACcontext.newRequest(this, taskListener)) {
+            taskListener.getLogger().println("Building from remote source: " + remote);
+
+            Node instance = Jenkins.getInstance();
+            Launcher launcher;
+            if (instance != null) {
+                launcher = instance.createLauncher(taskListener);
+            } else {
+                launcher = new Launcher.LocalLauncher(taskListener);
+            }
+
+            Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
+            accurevClient = accurev.getClient();
+            accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+            AccurevStreams streams;
+            if (ACcontext.getTopStream().isEmpty()) {
+                streams = accurevClient.getStreams(depot);
+            } else {
+                streams = accurevClient.getChildStreams(depot, ACcontext.getTopStream());
+            }
+
+            for (AccurevStream stream : streams.getList()) {
+
+                taskListener.getLogger().println("Processing object: " + stream.getName());
+                if (!ACcontext.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
+                    continue;
+                }
+                if (!ACcontext.isWantWorkspaces() && stream.getType().equals(AccurevStreamType.Workspace)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build workspaces");
+                    continue;
+                }
+                if (!ACcontext.isWantSnapshots() && stream.getType().equals(AccurevStreamType.Snapshot)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build snapshots");
+                    continue;
+                }
+                if (!ACcontext.isWantPassThroughs() && stream.getType().equals(AccurevStreamType.PassThrough)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build passthrough types");
+                    continue;
+                }
+                if (!ACcontext.iswantGatedStreams() && stream.getType().equals(AccurevStreamType.Staging)) {
+                    taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build gated streams");
+                    continue;
+                }
+                AccurevTransaction highest = accurevClient.fetchTransaction(stream.getName());
+                SCMHead head = new SCMHead(stream.getName());
+                AccurevSCMHead accurevHead = new AccurevSCMHead(new SCMRevisionImpl(head, highest.getId()).getHead().getName());
+                return new AccurevSCMRevision(accurevHead, highest.getId());
+            }
+        }
         return super.retrieve(revision,taskListener,context);
     }
 

@@ -64,6 +64,7 @@ public class IntegrationTest {
     private static String url;
     private static String username;
     private static String password;
+
     @BeforeClass
     public static void init() throws IOException, InterruptedException {
         url = System.getenv("_ACCUREV_URL") == "" ? System.getenv("_ACCUREV_URL") : "localhost:5050";
@@ -93,7 +94,6 @@ public class IntegrationTest {
             @Override
             public List<String> arguments() {
                 List<String> arg = new ArrayList<>();
-                //arg.add("/bin/bash");
                 arg.add("perl");
                 arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
