@@ -1,6 +1,7 @@
 version: '3.5'
 services:
   accurev-client:
+    privileged: true
     build: .
     container_name: accurev-client
     volumes:
