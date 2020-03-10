@@ -3,6 +3,7 @@ FROM maven:3-jdk-8-slim AS build
 USER root
 ENV ACCUREV_HOME /var/AccurevClient
 ENV PATH $PATH:${ACCUREV_HOME}/bin
+ENV DOCKER_COMPOSE_LOCATION /usr/local/bin/docker-compose
 
 RUN apt-get update && apt-get upgrade -y && \
   apt-get install -y curl unzip && \
@@ -26,6 +27,10 @@ RUN apt-get update && \
        stable" && \
     apt-get update && \
     apt-get -y install docker-ce
+
+RUN curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+RUN chmod +x /usr/local/bin/docker-compose
+
 
 COPY . /home/app/
 COPY pom.xml /home/app
