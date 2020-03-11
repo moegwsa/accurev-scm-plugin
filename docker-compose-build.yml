@@ -5,6 +5,4 @@ services:
     build: .
     container_name: accurev-client
     volumes:
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
+        - /var/run/docker.sock:/var/run/docker.sock
