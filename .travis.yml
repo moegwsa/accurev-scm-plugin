@@ -6,8 +6,8 @@ services:
 before_install:
   - curl -fsSL http://cdn.microfocus.com/cached/legacymf/Products/accurev/accurev7.3/accurev-7.3-linux-x86-x64-clientonly.bin -o ./accurev-client.bin
   - chmod +x ./accurev-client.bin
-  - sudo ./accurev-client.bin -i silent -f ./installer.properties; exit 0
-  - export PATH=$PATH:$PWD/casperjs-1.0.2/bin/
+  - sudo ./accurev-client.bin -i silent -f ./installer.properties
+  - export PATH=$PATH:/var/AccurevClient/bin/
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
