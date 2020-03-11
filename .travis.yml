@@ -4,12 +4,13 @@ jdk:
   - openjdk8
 services:
   - docker
-before_install:
-  -./install.sh
+#before_install:
+#  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+#  - docker pull ehhnwidex/accurev:latest
+#  - docker ps -a
+before_script:
+  - ./install.sh
   - export PATH=$PATH:/var/AccurevClient/bin/
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  - docker pull ehhnwidex/accurev:latest
-  - docker ps -a
 script:
   - mvn -e -Dmaven.test.skip=false -Dsurefire.useFile=false clean test package
   - mvn surefire-report:report-only
