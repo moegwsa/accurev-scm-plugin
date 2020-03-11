@@ -310,7 +310,7 @@ public class IntegrationTest {
     }
 
     @Test
-    public void HideEmptyStatingStreamsProjectTest() throws Exception{
+    public void HideEmptyStagingStreamsTest() throws Exception{
 
         rule.jenkins.disableSecurity();
         rule.jenkins.save();

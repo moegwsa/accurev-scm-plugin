@@ -19,11 +19,11 @@ use URI;
 use XML::Simple;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(createWebhook copyInputFile);
+our @EXPORT = qw(notifyBuildServer cacheInputFile);
 
 our @EXPORT_OK = qw(updateCrumb);
 
-sub createWebhook {
+sub notifyBuildServer {
 	my (@parameters) = @_;
 	my $command = $parameters[0];
 	my $stream = $parameters[1];
@@ -187,6 +187,7 @@ sub parseCommandToReason{
     $reason="created";
   }elsif($command ~~ ["rmdepot", "rmws", "rmstream", "rmtrig"] ){
     $reason="deleted";
+  # why is promote missing
   }elsif($command ~~ ["setproperty", "rmproperty", "defcomp", "rmtrig","unlock","lock","gatingAction"] ){
     $reason="updated";
   }else{
@@ -195,8 +196,8 @@ sub parseCommandToReason{
   
   return $reason;
 }
-
-sub copyInputFile {
+# Cache the accurev input files, for auto promote, when the build server returns the build result.
+sub cacheInputFile {
 	my ($file, $stream, $transaction_num) = @_;
 	# copy XML trigger input file to new location
     my $dir = "temp";
