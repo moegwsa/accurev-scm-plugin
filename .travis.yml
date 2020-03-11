@@ -4,12 +4,13 @@ jdk:
 services:
   - docker
 before_install:
+  - curl -fsSL http://cdn.microfocus.com/cached/legacymf/Products/accurev/accurev7.3/accurev-7.3-linux-x86-x64-clientonly.bin -o ./accurev-client.bin
+  - chmod +x ./accurev-client.bin
+  - sudo ./accurev-client.bin -i silent -f ./installer.properties; exit 0
+  - export PATH=$PATH:$PWD/casperjs-1.0.2/bin/
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
-before_script:
-  - curl -fsSL http://cdn.microfocus.com/cached/legacymf/Products/accurev/accurev7.3/accurev-7.3-linux-x86-x64-clientonly.bin -o ./accurev-client.bin && chmod +x ./accurev-client.bin
-  - sudo ./accurev-client.bin -i silent -f ./installer.properties; exit 0
 script:
   - mvn -e -Dmaven.test.skip=false -Dsurefire.useFile=false clean test package
   - mvn surefire-report:report-only
