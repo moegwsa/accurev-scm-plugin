@@ -4,11 +4,11 @@ jdk:
   - openjdk8
 services:
   - docker
-install: ./install.sh
 before_install:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
+install: ./install.sh
 before_script:
   - export PATH=$PATH:/var/AccurevClient/bin/
 script:
