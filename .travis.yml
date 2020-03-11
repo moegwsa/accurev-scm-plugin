@@ -3,9 +3,10 @@ jdk:
   - openjdk8
 services:
   - docker
-before_install:
+before_script:
   - curl -fsSL http://cdn.microfocus.com/cached/legacymf/Products/accurev/accurev7.3/accurev-7.3-linux-x86-x64-clientonly.bin -o ./accurev-client.bin && chmod +x ./accurev-client.bin
-  - ./accurev-client.bin -i silent -f ./installer.properties; exit 0
+  - sudo ./accurev-client.bin -i silent -f ./installer.properties; exit 0
+before_install:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
