@@ -1,6 +1,8 @@
 package jenkins.plugins.accurev;
 
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.connection.Container;
 import com.palantir.docker.compose.connection.DockerMachine;
@@ -11,6 +13,7 @@ import hudson.Launcher;
 import hudson.model.FreeStyleProject;
 import hudson.model.TaskListener;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
+import hudson.plugins.accurev.util.DockerUtils;
 import hudson.util.Secret;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
@@ -34,13 +37,8 @@ public class DockerTest {
     public JenkinsRule rule = new JenkinsRule();
 
 
-    @Rule
-    public DockerComposeRule docker = DockerComposeRule.builder()
-            .file("src/docker/docker-compose.yml")
-            .build();
-
     private AccurevClient client;
-
+    private static DockerClient dockerClient = DockerUtils.getDockerClient();
     private static String url;
     private static String username;
     private static String password;
@@ -52,6 +50,8 @@ public class DockerTest {
         password = System.getenv("_ACCUREV_PASSWORD") != null ? System.getenv("_ACCUREV_URL") : "docker";
         assumeTrue("Can only run test with proper test setup",
                 AccurevTestExtensions.checkCommandExist("accurev") &&
+                        DockerUtils.ContainerIsRunning(dockerClient,"accurev") &&
+                        DockerUtils.ContainerExists(dockerClient,"accurev") &&
                         StringUtils.isNotBlank(url) &&
                         StringUtils.isNotBlank(username) &&
                         StringUtils.isNotEmpty(password)
@@ -63,24 +63,14 @@ public class DockerTest {
         // Get the port from the JenkinsRule - When JenkinsRule runs it starts Jenkins at a random port
         String jenkinsPort = Integer.toString(rule.getURL().getPort());
         // For docker.exec command, no options needed.
-        DockerComposeExecOption options = new DockerComposeExecOption() {
-            @Override
-            public List<String> options() {
-                return Collections.emptyList();
-            }
+
+        String[] arguments = {
+          "perl",
+          "./updateJenkinsHook.pl",
+          jenkinsPort
         };
-        // Exec into the container, updating the url pointing to Jenkins with the correct port
-        DockerComposeExecArgument arguments = new DockerComposeExecArgument() {
-            @Override
-            public List<String> arguments() {
-                List<String> arg = new ArrayList<>();
-                arg.add("perl");
-                arg.add("./updateJenkinsHook.pl");
-                arg.add(jenkinsPort);
-                return arg;
-            }
-        };
-        docker.exec(options, "accurev", arguments);
+
+        DockerUtils.runCommand(dockerClient,"accurev",arguments);
         FreeStyleProject freeStyleProject = rule.createFreeStyleProject();
         Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars(),  new Launcher.LocalLauncher(TaskListener.NULL))
                 .at(freeStyleProject.getBuildDir()).on(url);
@@ -92,6 +82,5 @@ public class DockerTest {
     @Test
     public void dockerTest() throws Exception {
         assertTrue(url.contains(client.getInfo().getServerName()));
-
     }
 }

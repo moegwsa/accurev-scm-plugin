@@ -7,6 +7,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.gargoylesoftware.htmlunit.WebResponse;
+import com.github.dockerjava.api.DockerClient;
 import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
@@ -16,6 +17,7 @@ import hudson.model.Label;
 import hudson.model.TaskListener;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
+import hudson.plugins.accurev.util.DockerUtils;
 import hudson.scm.ChangeLogSet;
 import hudson.triggers.SCMTrigger;
 import hudson.util.Secret;
@@ -45,17 +47,12 @@ public class AccurevSCMStepTest {
     @Rule
     public JenkinsRule rule = new JenkinsRule();
 
-    @ClassRule
-    public static DockerComposeRule docker = DockerComposeRule.builder()
-            .file("src/docker/docker-compose.yml")
-            .build();
-
 
     String host = "localhost";
     String port = "5050";
 
     private AccurevClient client;
-
+    private static DockerClient dockerClient = DockerUtils.getDockerClient();
     private static String url;
     private static String username;
     private static String password;
@@ -67,6 +64,8 @@ public class AccurevSCMStepTest {
         password = System.getenv("_ACCUREV_PASSWORD") != null ? System.getenv("_ACCUREV_URL") : "docker";
         assumeTrue("Can only run test with proper test setup",
                 AccurevTestExtensions.checkCommandExist("accurev") &&
+                        DockerUtils.ContainerIsRunning(dockerClient,"accurev") &&
+                        DockerUtils.ContainerExists(dockerClient,"accurev") &&
                         StringUtils.isNotBlank(url) &&
                         StringUtils.isNotBlank(username) &&
                         StringUtils.isNotEmpty(password)
@@ -85,19 +84,14 @@ public class AccurevSCMStepTest {
             }
         };
         // Exec into the container, updating the url pointing to Jenkins with the correct port
-        DockerComposeExecArgument arguments = new DockerComposeExecArgument() {
-            @Override
-            public List<String> arguments() {
-                List<String> arg = new ArrayList<>();
-                arg.add("perl");
-                arg.add("./updateJenkinsHook.pl");
-                arg.add(jenkinsPort);
-                arg.add("host.docker.internal");
-                return arg;
-            }
+        String[] arguments = {
+                "perl",
+                "./updateJenkinsHook.pl",
+                jenkinsPort,
+                "host.docker.internal"
         };
-        docker.exec(options, "accurev", arguments);
 
+        DockerUtils.runCommand(dockerClient,"accurev",arguments);
     }
 
     @Test

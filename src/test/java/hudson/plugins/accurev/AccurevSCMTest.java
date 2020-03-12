@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.github.dockerjava.api.DockerClient;
 import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
@@ -11,6 +12,7 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
+import hudson.plugins.accurev.util.DockerUtils;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
 import jenkins.plugins.accurevclient.Accurev;
@@ -37,14 +39,10 @@ public class AccurevSCMTest {
     @Rule
     public JenkinsRule rule = new JenkinsRule();
 
-    @Rule
-    public DockerComposeRule docker = DockerComposeRule.builder()
-            .file("src/docker/docker-compose.yml")
-            .build();
-
     protected TaskListener listener = StreamTaskListener.fromStderr();
 
     private AccurevClient client;
+    private static DockerClient dockerClient = DockerUtils.getDockerClient();
 
     private static String url;
     private static String host = "localhost";
@@ -59,6 +57,8 @@ public class AccurevSCMTest {
         password = System.getenv("_ACCUREV_PASSWORD") != null ? System.getenv("_ACCUREV_URL") : "docker";
         assumeTrue("Can only run test with proper test setup",
                 AccurevTestExtensions.checkCommandExist("accurev") &&
+                        DockerUtils.ContainerIsRunning(dockerClient,"accurev") &&
+                        DockerUtils.ContainerExists(dockerClient,"accurev") &&
                         StringUtils.isNotBlank(url) &&
                         StringUtils.isNotBlank(username) &&
                         StringUtils.isNotEmpty(password)
@@ -70,27 +70,15 @@ public class AccurevSCMTest {
     public void setUp() throws Exception {
         // Get the port from the JenkinsRule - When JenkinsRule runs it starts Jenkins at a random port
         String jenkinsPort = Integer.toString(rule.getURL().getPort());
-        // For docker.exec command, no options needed.
-        DockerComposeExecOption options = new DockerComposeExecOption() {
-            @Override
-            public List<String> options() {
-                return Collections.emptyList();
-            }
+
+        String[] arguments = {
+                "perl",
+                "./updateJenkinsHook.pl",
+                jenkinsPort
         };
-        // Exec into the container, updating the url pointing to Jenkins with the correct port
-        DockerComposeExecArgument arguments = new DockerComposeExecArgument() {
-            @Override
-            public List<String> arguments() {
-                List<String> arg = new ArrayList<>();
-                //arg.add("/bin/bash");
-                arg.add("perl");
-                arg.add("./updateJenkinsHook.pl");
-                arg.add(jenkinsPort);
-                arg.add("host.docker.internal");
-                return arg;
-            }
-        };
-        docker.exec(options, "accurev", arguments);
+
+        DockerUtils.runCommand(dockerClient,"accurev",arguments);
+
         FreeStyleProject freeStyleProject = rule.createFreeStyleProject();
         Accurev accurev = Accurev.with(TaskListener.NULL, new EnvVars(), new Launcher.LocalLauncher(TaskListener.NULL))
                 .at(freeStyleProject.getBuildDir()).on(url);

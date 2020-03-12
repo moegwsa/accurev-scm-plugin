@@ -1,5 +1,24 @@
 version: '3.5'
 services:
+  accurev:
+    image: ehhnwidex/accurev:latest
+    container_name: accurev
+    ports:
+      - "5050:5050"
+      - "8883:1883"
+    volumes:
+      - type: bind
+        source: './triggers'
+        target: '/home/accurev-user/triggers'
+        read_only: true
+    healthcheck:
+      test: ./accurev/bin/accurev info
+      interval: 10s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    environment:
+      - JENKINS_PORT=8081
   accurev-client:
     privileged: true
     build: .

@@ -5,10 +5,12 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.github.dockerjava.api.DockerClient;
 import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
+import hudson.plugins.accurev.util.DockerUtils;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.scm.api.SCMFile;
@@ -41,17 +43,11 @@ public class AccurevSCMFileSystemTest {
     @ClassRule
     public static JenkinsRule rule = new JenkinsRule();
 
-    @ClassRule
-    public static DockerComposeRule docker = DockerComposeRule.builder()
-            .file("src/docker/docker-compose.yml")
-            .build();
-
-
     String host = "localhost";
     String port = "5050";
 
     private AccurevClient client;
-
+    private static DockerClient dockerClient = DockerUtils.getDockerClient();
     private static String url;
     private static String username;
     private static String password;
@@ -63,6 +59,8 @@ public class AccurevSCMFileSystemTest {
         password = System.getenv("_ACCUREV_PASSWORD") != null ? System.getenv("_ACCUREV_URL") : "docker";
         assumeTrue("Can only run test with proper test setup",
                 AccurevTestExtensions.checkCommandExist("accurev") &&
+                        DockerUtils.ContainerIsRunning(dockerClient,"accurev") &&
+                        DockerUtils.ContainerExists(dockerClient,"accurev") &&
                         StringUtils.isNotBlank(url) &&
                         StringUtils.isNotBlank(username) &&
                         StringUtils.isNotEmpty(password)
@@ -73,45 +71,19 @@ public class AccurevSCMFileSystemTest {
     public void setUp() throws IOException, InterruptedException {
         // Get the port from the JenkinsRule - When JenkinsRule runs it starts Jenkins at a random port
         String jenkinsPort = Integer.toString(rule.getURL().getPort());
-        // For docker.exec command, no options needed.
-        DockerComposeExecOption options = new DockerComposeExecOption() {
-            @Override
-            public List<String> options() {
-                return Collections.emptyList();
-            }
+        String[] arguments = {
+                "perl",
+                "./updateJenkinsHook.pl",
+                jenkinsPort
         };
-        // Exec into the container, updating the url pointing to Jenkins with the correct port
-        DockerComposeExecArgument arguments = new DockerComposeExecArgument() {
-            @Override
-            public List<String> arguments() {
-                List<String> arg = new ArrayList<>();
-                //arg.add("/bin/bash");
-                arg.add("perl");
-                arg.add("./updateJenkinsHook.pl");
-                arg.add(jenkinsPort);
-                return arg;
-            }
-        };
-        docker.exec(options, "accurev", arguments);
 
-        // For docker.exec command, no options needed.
-        options = new DockerComposeExecOption() {
-            @Override
-            public List<String> options() {
-                return new ArrayList<>();
-            }
-        };
-        // Exec into the container, updating the url pointing to Jenkins with the correct port
-        arguments = new DockerComposeExecArgument() {
-            @Override
-            public List<String> arguments() {
-                List<String> arg = new ArrayList<>();
-                arg.add("cat");
-                arg.add("accurev/storage/site_slice/triggers/jenkinsConfig.JSON");
-                return arg;
-            }
-        };
-        assertTrue((docker.exec(options, "accurev", arguments).contains(jenkinsPort)));
+        DockerUtils.runCommand(dockerClient,"accurev",arguments);
+
+        assertTrue(DockerUtils.readFileFromContainer(dockerClient,
+                "accurev",
+                "accurev/storage/site_slice/triggers/jenkinsConfig.JSON")
+                .toString()
+                .contains(jenkinsPort));
 
     }
 
