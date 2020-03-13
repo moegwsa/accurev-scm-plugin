@@ -238,7 +238,7 @@ sub runGatingAction{
    $::AccuRev = glob("~/accurev/bin/accurev");
    #
    # Windows Example
-   #$::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
+   # $::AccuRev = qq("C:\\Program Files\\AccuRev\\bin\\accurev.exe");
 
 
    ####################################################### CUSTOMIZE ME
@@ -265,8 +265,8 @@ sub runGatingAction{
    # $ENV{'HOME'} = "/home/replace_with_username";
    #
    # Windows Example
-   #$ENV{'HOMEDRIVE'} = "c:";
-   #$ENV{'HOMEPATH'} = "\\Users\\TMEL";
+   # $ENV{'HOMEDRIVE'} = "c:";
+   # $ENV{'HOMEPATH'} = "\\Users\\replace_with_username";
 
 
    #
