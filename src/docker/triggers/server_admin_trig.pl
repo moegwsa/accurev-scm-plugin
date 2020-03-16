@@ -310,11 +310,9 @@ sub main
 
         # EXAMPLE VALIDATION:
         # only a user listed as an administrator can run the command
-        $result = `$::AccuRev ismember $principal $admingrp`;
-        if ( $result == 0 ) {
-            print TIO "is member returned $result \n";
+        if ( `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Execution of '$command' command disallowed:\n";
-            print TIO "server_admin_trig: $principal are not in the Admin group: $admingrp.\n";
+            print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
             exit(1);
         }
@@ -363,7 +361,7 @@ sub main
         	$userWspace = $elemHref;
         	last;
         }
-        if ("$userWspace->{user_name}" ne $principal and `$::AccuRev ismember $principal $admingrp` == 0) {
+        if ("$userWspace->{user_name}" ne $principal and `$::AccuRev ismember $principal "$admingrp"` == 0) {
             print TIO "Cannot 'chws' workspace '$stream1'.\n";
             print TIO "This workspace belongs to another user, or\n";
             print TIO "You are not in the $admingrp group.\n";
@@ -372,7 +370,6 @@ sub main
         }
         # #end of EXAMPLE VALIDATION
 
-	createWebhook($command, $stream1, $depot, $principal);
 
 
     # # no problems, allow command to proceed
@@ -405,7 +402,7 @@ sub main
         # EXAMPLE VALIDATION:
         # only a user listed as an administrator can make a
         # change to someone else's username
-        if ($newName ne "" and $principal ne $user and `$::AccuRev ismember $principal $admingrp` == 0) {
+        if ($newName ne "" and $principal ne $user and `$::AccuRev ismember $principal "$admingrp"` == 0) {
             print TIO "Cannot 'chuser' user '$user'.\n";
             print TIO "This username belongs to another user, and\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
@@ -413,7 +410,7 @@ sub main
         }
         # only a user listed as an administrator can make a
         # change to someone's user kind for licensing purposes
-        if ($newKind ne "" and `$::AccuRev ismember $principal $admingrp` == 0) {
+        if ($newKind ne "" and `$::AccuRev ismember $principal "$admingrp"` == 0) {
             print TIO "Cannot 'chuser' license kind.\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -449,7 +446,7 @@ sub main
         # EXAMPLE VALIDATION:
         # only a user listed as an administrator can make a
         # change to someone else's password
-        if ($principal ne $user and `$::AccuRev ismember $principal $admingrp` == 0) {
+        if ($principal ne $user and `$::AccuRev ismember $principal "$admingrp"` == 0) {
             print TIO "$principal cannot 'chpasswd' ${user}'s password.\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -486,7 +483,7 @@ sub main
         # EXAMPLE VALIDATION:
         # only a user listed as an administrator can make a workspace
         # based on streams in the "basis_stream_deny" list
-        if ( defined($basis_stream_deny{$stream2}) and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ( defined($basis_stream_deny{$stream2}) and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Execution of 'mkws' command disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -522,7 +519,7 @@ sub main
         # only a user listed as an administrator can lock a stream
         # in the "admin_stream" list
 
-        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Locking a stream identified as an 'admin stream' disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -558,7 +555,7 @@ sub main
         # only a user listed as an administrator can unlock a stream
         # in the "admin_stream" list
 
-        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Unlocking a stream identified as an 'admin stream' disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -603,14 +600,14 @@ sub main
         # only a user listed as an administrator can run defcomp on a stream
         # in the "admin_stream" list
 
-        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Running defcomp on a stream identified as an 'admin stream' disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
             exit(1);
         }
         # end of EXAMPLE VALIDATION
-		createWebhook($command, $stream1, $depot, $principal);
+		notifyBuild($command, $stream1, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -641,18 +638,19 @@ sub main
         # only a user listed as an administrator can change a stream
         # in the "admin_stream" list
         #
-        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ( defined($admin_stream{$stream1}) and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Modifying a stream identified as an 'admin stream' disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
              exit(1);
          }
         # end of EXAMPLE VALIDATION
-
+		# Rebase stream
 		if($stream3 eq '') {
-			createWebhook($command, $stream1, $depot, $principal);
+			notifyBuild($command, $stream1, $depot, $principal);
+		# Rename stream
 		}else{
-			createWebhook($command, $stream3, $depot, $principal);
+			notifyBuild($command, $stream3, $depot, $principal);
 		}
 
 
@@ -686,7 +684,7 @@ sub main
 	# EXAMPLE VALIDATION 1:
 	# only a user listed as an administrator can create a new snapshot
 
-        if ($streamType eq "snapshot" and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ($streamType eq "snapshot" and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
 	    print TIO "Making a snapshot disallowed:\n";
 	    print TIO "server_admin_trig: Only a member of the group $admingrp can create snapshots.\n";
             close TIO;
@@ -699,7 +697,7 @@ sub main
         # only a user listed as an administrator can create a new stream
         # based on an existing stream in the "basis_stream_deny" list
 
-        if ( defined($basis_stream_deny{$stream2}) and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ( defined($basis_stream_deny{$stream2}) and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Basing a new stream on existing stream '$stream2' disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -707,7 +705,7 @@ sub main
         }
         # end of EXAMPLE VALIDATION 2
 
-        createWebhook($command, $stream1, $depot, $principal);
+        notifyBuild($command, $stream1, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -755,7 +753,7 @@ sub main
         # a stream named "stream_123"
 
         if ( ($objectType eq "3" and $objectName eq "stream_123")
-                 and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+                 and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Removal of stream '$objectName' disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -768,7 +766,7 @@ sub main
         # someone else's workspace
 
         if ( ($objectType eq "2" and $objectName !~ /(.*)_($principal)$/)
-                 and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+                 and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Execution of 'remove' command for someone else's workspace disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -781,14 +779,14 @@ sub main
         # someone else's sessions
 
         if ( ($objectType eq "7" and $objectName !~ /(.*)_($principal)$/)
-                 and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+                 and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Execution of 'remove' command for someone else's sessions disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
             exit(1);
         }
         # end of EXAMPLE VALIDATION 3
-        createWebhook($command, $objectName, $depot, $principal);
+        notifyBuild($command, $objectName, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -830,7 +828,7 @@ sub main
         # a stream named "stream_123"
 
         if ( ($objectType eq "3" and $objectName eq "stream_123")
-                 and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+                 and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Reactivating stream '$objectName' disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
@@ -841,14 +839,14 @@ sub main
         # EXAMPLE VALIDATION 2:
         # only a user listed as an administrator can reactivate a user
 
-        if ( $objectType eq "5" and `$::AccuRev ismember $principal $admingrp` == 0 ) {
+        if ( $objectType eq "5" and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
             print TIO "Reactivating a user disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
             close TIO;
             exit(1);
         }
         # end of EXAMPLE VALIDATION 2
-        createWebhook($command, $objectName, $depot, $principal);
+        notifyBuild($command, $objectName, $depot, $principal);
         
         # no problems, allow command to proceed
         close TIO;
@@ -887,7 +885,7 @@ sub main
         }
 
         # only a user listed as an administrator can run the command
-        $result = `$::AccuRev ismember $principal $admingrp`;
+        $result = `$::AccuRev ismember $principal "$admingrp"`;
         if ( $result == "0" ) {
             print TIO "Execution of replica sync command disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
@@ -931,7 +929,7 @@ sub main
         }
 
         # only a user listed as an administrator can run the command
-        $result = `$::AccuRev ismember $principal $admingrp`;
+        $result = `$::AccuRev ismember $principal "$admingrp"`;
         if ( $result == "0" ) {
             print TIO "Execution of mkreplica command disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
@@ -965,7 +963,7 @@ sub main
     ######################################################
 
         # only a user listed as an administrator can run the command
-        $result = `$::AccuRev ismember $principal $admingrp`;
+        $result = `$::AccuRev ismember $principal "$admingrp"`;
         if ( $result == "0" ) {
             print TIO "Execution of rmreplica command disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
@@ -1000,7 +998,7 @@ sub main
     ######################################################
 
         # # only a user listed as an administrator can run the command
-        $result = `$::AccuRev ismember $principal $admingrp`;
+        $result = `$::AccuRev ismember $principal "$admingrp"`;
         if ( $result == "0" ) {
             print TIO "Execution of authmethod command disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";
@@ -1031,7 +1029,7 @@ sub main
     ######################################################
 
         # only a user listed as an administrator can run the command
-        $result = `$::AccuRev ismember $principal $admingrp`;
+        $result = `$::AccuRev ismember $principal "$admingrp"`;
         if ( $result == "0" ) {
             print TIO "Execution of trace-event command disallowed:\n";
             print TIO "server_admin_trig: You are not in the $admingrp group.\n";

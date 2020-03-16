@@ -19,11 +19,11 @@ use URI;
 use XML::Simple;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(createWebhook copyInputFile);
+our @EXPORT = qw(notifyBuild copyInputFile);
 
 our @EXPORT_OK = qw(updateCrumb);
 
-sub createWebhook {
+sub notifyBuild {
 	my (@parameters) = @_;
 	my $command = $parameters[0];
 	my $stream = $parameters[1];
@@ -82,11 +82,17 @@ sub createWebhook {
 			$principal = "gatingActionPrincipal";
 		}
 		print "Notifying for: $urlToJenkins for other than postPromote and gatingAction \n";
-		my $response = $userAgent->post($urlToJenkins, {'host' => $accurevInfo->{serverName}, 'port' => $accurevInfo->{serverPort}, 'streams' => $stream, 'principal' => $principal, 'reason' => $reason});
+		my $response = $userAgent->post($urlToJenkins, {
+		    'host' => $accurevInfo->{serverName},
+		    'port' => $accurevInfo->{serverPort},
+		    'streams' => $stream,
+		    'principal' => $principal,
+		    'reason' => $reason
+		});
 		if ($response->is_error) {
-                print "cannot notify build because \n";
-                print $response->code . "\n";
-                print $response->message . "\n";
+            print "cannot notify build because \n";
+            print $response->code . "\n";
+            print $response->message . "\n";
         }
 		if(!messageSucceeded($response->status_line)) {
 			print "Invalid crumb, fetching new \n";
@@ -94,18 +100,37 @@ sub createWebhook {
 			updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 			print "Trying to trigger stream again. \n";
 			$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
-			$userAgent->post($urlToJenkins, {'host' => $accurevInfo->{serverName}, 'port' => $accurevInfo->{serverPort}, 'streams' => $stream, 'principal' => $principal, 'reason' => $reason});
+			$userAgent->post($urlToJenkins, {'host' => $accurevInfo->{serverName},
+                'port' => $accurevInfo->{serverPort},
+                'streams' => $stream,
+                'principal' => $principal,
+                'reason' => $reason
+			});
 		}
 	}else{
 	    print "Notifying for: $urlToJenkins for postPromote and gatingAction \n";
-		my $response = $userAgent->post($urlToJenkins, {'host' => $accurevInfo->{serverName}, 'port' => $accurevInfo->{serverPort}, 'streams' => $stream, 'transaction' => $transaction_num, 'principal' => $principal, 'reason' => $reason});
+		my $response = $userAgent->post($urlToJenkins, {
+		    'host' => $accurevInfo->{serverName},
+		    'port' => $accurevInfo->{serverPort},
+		    'streams' => $stream,
+		    'transaction' => $transaction_num,
+		    'principal' => $principal,
+		    'reason' => $reason
+		});
 		if(!messageSucceeded($response->status_line)) {
 			print "Invalid crumb, fetching new. \n";
 			my ($crumbUpdated, $crumbRequestFieldUpdated) = updateCrumb($url);
 			updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 			print "Trying to trigger stream again. \n";
 			$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
-			$userAgent->post($urlToJenkins, {'host' => $accurevInfo->{serverName}, 'port' => $accurevInfo->{serverPort}, 'streams' => $stream, 'transaction' => $transaction_num, 'principal' => $principal, 'reason' => $reason});
+			$userAgent->post($urlToJenkins, {
+			    'host' => $accurevInfo->{serverName},
+			    'port' => $accurevInfo->{serverPort},
+			    'streams' => $stream,
+			    'transaction' => $transaction_num,
+			    'principal' => $principal,
+			    'reason' => $reason
+			});
 		}
 	}
 
@@ -180,14 +205,15 @@ sub updateJenkinsConfigFile {
 	close $fh;
 }
 
+# we don't wanna process workspaces and keep for now
 sub parseCommandToReason{
   my ($command) = @_;
   my $reason;
-  if($command ~~ ["mkdepot", "mkws", "mkstream", "mktrig"] ){
+  if($command ~~ ["mkdepot" , "mkstream","reactivated","chstream"] ){ #chstream as rename
     $reason="created";
-  }elsif($command ~~ ["rmdepot", "rmws", "rmstream", "rmtrig"] ){
+  }elsif($command ~~ ["rmdepot" , "rmstream"] ){
     $reason="deleted";
-  }elsif($command ~~ ["setproperty", "rmproperty", "defcomp", "rmtrig","unlock","lock","gatingAction"] ){
+  }elsif($command ~~ ["defcomp", "gatingAction", "promote"] ){ #chstream as rebase
     $reason="updated";
   }else{
     $reason="unknown";

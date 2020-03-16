@@ -35,7 +35,7 @@
 # Make sure to change the following to the actual path of accurev bin.
 #
 # Unix Example
- $::AccuRevBin = "/usr/accurev/bin";
+ $::AccuRev = "/home/accurev-user/accurev/bin/accurev";
 ## Windows Example
 #  $::AccuRevBin = "C:\\progra~1\\accurev\\bin";
 #
@@ -45,7 +45,7 @@
 # STEP 5 of 9:
 # Make sure to change the following to the actual path of the accurev client program
 # Unix Example
- $::AccuRev = "/usr/accurev/bin/accurev";
+ $::AccuRev = "/home/accurev-user/accurev/bin/accurev";
 # Windows Example
 #  $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
 #
@@ -54,14 +54,14 @@
 use strict;
 use File::Basename;
 use XML::Simple;
-use LWP::UserAgent ();
+use LWP::UserAgent (); # try delete
 
 use File::Copy;
 use File::Path qw(make_path);
 
-use Encode qw(encode_utf8);
-use HTTP::Request ();
-use JSON::MaybeXS qw(encode_json);
+use Encode qw(encode_utf8); # try delete
+use HTTP::Request (); # try delete
+use JSON::MaybeXS qw(encode_json); # try delete
 use lib dirname (__FILE__);
 use warnings;
 use JenkinsHook;
@@ -138,8 +138,8 @@ sub main
     # $ENV{'HOME'} = "/home/replace_with_username";
     #
     # Windows Example
-    #$ENV{'HOMEDRIVE'} = "c:";
-    #$ENV{'HOMEPATH'} = "\\Documents and Settings\\TMEL";
+    # $ENV{'HOMEDRIVE'} = "c:";
+    # $ENV{'HOMEPATH'} = "\\Documents and Settings\\replace_with_username";
     #
     # STEP 2:
     # =======
@@ -157,7 +157,7 @@ sub main
     #######################################################
 
     # Validate that the script user is logged in
-    my $loginStatus = `accurev secinfo`;
+    my $loginStatus = `$::AccuRev secinfo`;
     #my $loginStatus = system("$::AccuRev secinfo");
     chomp ($loginStatus);
     if ($loginStatus eq "notauth") {
@@ -190,11 +190,11 @@ sub main
     #
     # Windows:
     # system("$::AccuRevBin\\server_ot_promote", $file, $file2);
-	copyInputFile($file2, $stream, $transaction_num, $principal);
+	copyInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
 	
 	system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"".generateCustomIcon("running", "", "Processing transaction $transaction_num")."\"");
-    my $command = "gatingAction";
-    createWebhook($command, $stream, $depot, $transaction_num);
+    my $command = "gatingAction"; # postPromote
+    notifyBuild($command, $stream, $depot, $transaction_num);
 
 	# $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
 	
@@ -222,6 +222,10 @@ sub main
 
 }
 
+# generate the streamCustomIcon xml
+#  status should be a string with one of the allowed icon images: running, failed, success, warning
+#  url is the url to open a browser on when you click on the icon
+#  tooltip is the string to show as the tooltip when you hover over the icon
 sub generateCustomIcon($$$) {
    my($xml);
    my($status, $url, $tooltip) = ($_[0], $_[1], $_[2]);

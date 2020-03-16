@@ -36,7 +36,6 @@ use LWP::UserAgent;
 use File::Spec::Functions qw(rel2abs);
 use File::Basename;
 use Fcntl qw(:flock :seek);
-#use warnings;
 use File::Copy;
 use File::Basename;
 
@@ -54,7 +53,6 @@ sub main
    $file = $ARGV[0];
    #$xmlinput_raw = "";
    open TIO, "<$file" or die "Can't open $file";
-   print "$file \n";
    while (<TIO>){
        $_ =~ s/^\<\?xml version(.*)\?\>//i;
        $xmlinput_raw = ${xmlinput_raw}.$_;
@@ -114,7 +112,7 @@ sub runStreamEvent{
    # print Dumper($xmlinput);
 
    # Uncomment the below to pass the Stream Event to the Kando Server
-   #postKandoEvent($xmlinput);
+   # postKandoEvent($xmlinput);
    exit(0);
 }
 
@@ -232,10 +230,11 @@ sub runGatingAction{
    #  3. Edit the Unix example code accordingly
    #######################################################
    # Unix
-   use Cwd            qw( abs_path );
-   use File::Basename qw( dirname );
-   log_trigger_error(glob("~/accurev/bin/accurev"));
-   $::AccuRev = glob("~/accurev/bin/accurev");
+   # TBD removed
+   # use Cwd            qw( abs_path );
+   # use File::Basename qw( dirname );
+   # log_trigger_error(glob("~/accurev/bin/accurev"));
+   $::AccuRev = "/home/accurev-user/accurev/bin/accurev";
    #
    # Windows Example
    # $::AccuRev = qq("C:\\Program Files\\AccuRev\\bin\\accurev.exe");
@@ -290,11 +289,9 @@ sub runGatingAction{
      log_trigger_error("AccuRev '$::AccuRev' is not a valid path");
      exit(1);
    }
-	#log_trigger_error("Validated path successfully");
    # Validate that the script user is logged in
    my $loginStatus = `$::AccuRev secinfo`;
    chomp ($loginStatus);
-   log_trigger_error("Chomped loginstatus");
    if ($loginStatus eq "notauth") {
      log_trigger_error("Script user not logged in (accurev secinfo returned '$loginStatus').  Please create a permanent session token (accurev login -n <username> <password>)");
      exit(1);
@@ -303,7 +300,6 @@ sub runGatingAction{
      exit(1);
    }
 
-   log_trigger_error("Passed initial checking");
 
    # Check for overlapped files before starting
    my $stat_output = `$::AccuRev stat -s \"$staging_stream\" -o`;
@@ -315,7 +311,6 @@ sub runGatingAction{
 	  exit(1);
    }
 
-    log_trigger_error("No overlap");
 
     # Lock promotes from the staging stream
     system("$::AccuRev lock -kf \"$staging_stream\"");
@@ -332,65 +327,72 @@ sub runGatingAction{
 
     # Populate the files associated with this transaction
     # system("$::AccuRev pop -v \"$staging_stream\" -t $trn_arg -O -R -L . .");
+	use lib dirname (__FILE__);
+	use JenkinsHook;
+	use JenkinsHook('updateCrumb');
+	
+	notifyBuild("gatingAction", $staging_stream, $depot, $transaction_num);
+	
 
-    use Socket;
+
+    # use Socket;
     # Fetch docker host IP adress through Docker network, located at host.docker.internal
-  	my $host = inet_ntoa(inet_aton("host.docker.internal"));
+  	# my $host = inet_ntoa(inet_aton("host.docker.internal"));
     # Get the port, standard from docker-compose file is set to 8081. Run changeJenkinsUrl PORT_NUM to chagne
-    my $port = $ENV{'JENKINS_PORT'};
+    # my $port = $ENV{'JENKINS_PORT'};
 
-    binmode STDOUT, ":utf8";
-    use utf8;
-    use JSON;
+    # binmode STDOUT, ":utf8";
+    # use utf8;
+    # use JSON;
 
-    my $json;
-      {
-        local $/; #Enable 'slurp' mode
-        my $file = "triggers/jenkinsConfig.JSON";
-        open my $fh, "<", $file or die $!;
-        $json = <$fh>;
-        close $fh;
-      }
-      my $jenkinsConfig = decode_json($json);
+    # my $json;
+    #   {
+    #     local $/; #Enable 'slurp' mode
+    #     my $file = "triggers/jenkinsConfig.JSON";
+    #     open my $fh, "<", $file or die $!;
+    #     $json = <$fh>;
+    #     close $fh;
+    #   }
+    #   my $jenkinsConfig = decode_json($json);
 
-      my $jPort = $jenkinsConfig->{'config'}->{'port'};
-      my $jHost = $jenkinsConfig->{'config'}->{'host'};
+    #   my $jPort = $jenkinsConfig->{'config'}->{'port'};
+    #   my $jHost = $jenkinsConfig->{'config'}->{'host'};
 
-    if($jPort ne ''){
-      $port = $jPort;
-    }
+    # if($jPort ne ''){
+    #   $port = $jPort;
+    # }
 
-    if($jHost ne ''){
-      $host = $jHost;
-    }
+    # if($jHost ne ''){
+    #   $host = $jHost;
+    # }
 
-    print "Port that should receive message: $port\n";
-    my $url ="http://$host:$port/jenkins/accurev/notifyCommit/";
+    # print "Port that should receive message: $port\n";
+    # my $url ="http://$host:$port/jenkins/accurev/notifyCommit/";
 
-	print "Hook was triggered on stream: $staging_stream - Transaction number: $transaction_num \n";
-	print "Sent to: $url \n";
+	# print "Hook was triggered on stream: $staging_stream - Transaction number: $transaction_num \n";
+	# print "Sent to: $url \n";
 
-	my $ua = LWP::UserAgent->new;
+	# my $ua = LWP::UserAgent->new;
 	# Set timeout for post calls to 10 seconds.
-	$ua->timeout(10);
-	my $xmlInput = `$::AccuRev info -fx`;
-	my $accurevInfo = XMLin($xmlInput);
+	# $ua->timeout(10);
+	# my $xmlInput = `$::AccuRev info -fx`;
+	# my $accurevInfo = XMLin($xmlInput);
 
 
 	# WHEN NOT TESTING ON LOCALHOST, USE $accurevInfo->{serverName} FOR HOST
 	# Create a post call to the Jenkins server with the information regarding the stream that was promoted from
-	my $res = $ua->post($url, {'host' => 'localhost', 'port' => $accurevInfo->{serverPort}, 'streams' => $staging_stream, 'transaction' => $transaction_num, 'principal' => 'gatedStreamPrincipal'});
+	# my $res = $ua->post($url, {'host' => 'localhost', 'port' => $accurevInfo->{serverPort}, 'streams' => $staging_stream, 'transaction' => $transaction_num, 'principal' => 'gatedStreamPrincipal'});
 
-	use HTTP::Status ();
+	# use HTTP::Status ();
 
 	# The useragent can have a timeout if two requests are send too fast - Find a way to solve
-	if ($res->is_error) {
-		log_trigger_error($res->code);
-		log_trigger_error($res->message);
-		if($res->code == HTTP::Status::HTTP_REQUEST_TIMEOUT) {
-			log_trigger_error("We hit a timeout");
-		}
-	}
+	# if ($res->is_error) {
+	# 	log_trigger_error($res->code);
+	# 	log_trigger_error($res->message);
+	# 	if($res->code == HTTP::Status::HTTP_REQUEST_TIMEOUT) {
+	# 		log_trigger_error("We hit a timeout");
+	# 	}
+	# }
 
 	# Set stream property to running, if it is not set before server_master_trig.pl script closes, Accurev will go into an error state where no triggers can be triggered
 	my $result = 'running';
@@ -398,7 +400,6 @@ sub runGatingAction{
 
     # Remove the input file when done
     unlink $ARGV[0] or warn "Could not unlink $ARGV[0]: $!";
-	log_trigger_error("Unlinked file, exiting.");
     exit(0);
 }
 
