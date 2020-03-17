@@ -19,7 +19,7 @@ use URI;
 use XML::Simple;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(notifyBuild copyInputFile);
+our @EXPORT = qw(notifyBuild cacheInputFile);
 
 our @EXPORT_OK = qw(updateCrumb);
 
@@ -32,6 +32,7 @@ sub notifyBuild {
 	my $principal = $parameters[4];
 
 	if(not looks_like_number($parameters[3])){
+		$transaction_num = 1;
 		$principal=$parameters[3];
 	}
 	
@@ -77,63 +78,33 @@ sub notifyBuild {
 	print "Triggering Stream on Jenkins. By $reason because of $command \n";
 	# WHEN NOT TESTING ON LOCALHOST, USE $accurevInfo->{serverName} FOR HOST
 	# Create a post call to the Jenkins server with the information regarding the stream that was promoted from
-	if(!$command eq "gatingAction" || !$command eq "postPromote") {
-		if($principal eq '') {
-			$principal = "gatingActionPrincipal";
-		}
-		print "Notifying for: $urlToJenkins for other than postPromote and gatingAction \n";
-		my $response = $userAgent->post($urlToJenkins, {
-		    'host' => $accurevInfo->{serverName},
-		    'port' => $accurevInfo->{serverPort},
-		    'streams' => $stream,
-		    'principal' => $principal,
-		    'reason' => $reason
-		});
-		if ($response->is_error) {
-            print "cannot notify build because \n";
-            print $response->code . "\n";
-            print $response->message . "\n";
-        }
-		if(!messageSucceeded($response->status_line)) {
-			print "Invalid crumb, fetching new \n";
-			my ($crumbUpdated, $crumbRequestFieldUpdated) = updateCrumb($url);
-			updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
-			print "Trying to trigger stream again. \n";
-			$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
-			$userAgent->post($urlToJenkins, {'host' => $accurevInfo->{serverName},
-                'port' => $accurevInfo->{serverPort},
-                'streams' => $stream,
-                'principal' => $principal,
-                'reason' => $reason
-			});
-		}
-	}else{
-	    print "Notifying for: $urlToJenkins for postPromote and gatingAction \n";
-		my $response = $userAgent->post($urlToJenkins, {
-		    'host' => $accurevInfo->{serverName},
-		    'port' => $accurevInfo->{serverPort},
-		    'streams' => $stream,
-		    'transaction' => $transaction_num,
-		    'principal' => $principal,
-		    'reason' => $reason
-		});
-		if(!messageSucceeded($response->status_line)) {
-			print "Invalid crumb, fetching new. \n";
-			my ($crumbUpdated, $crumbRequestFieldUpdated) = updateCrumb($url);
-			updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
-			print "Trying to trigger stream again. \n";
-			$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
-			$userAgent->post($urlToJenkins, {
-			    'host' => $accurevInfo->{serverName},
-			    'port' => $accurevInfo->{serverPort},
-			    'streams' => $stream,
-			    'transaction' => $transaction_num,
-			    'principal' => $principal,
-			    'reason' => $reason
-			});
-		}
+	if($principal eq '') {
+		$principal = "gatingActionPrincipal";
 	}
-
+	print "Notifying for: $urlToJenkins for other than postPromote and gatingAction \n";
+	my $response = $userAgent->post($urlToJenkins, {
+		'host' => $accurevInfo->{serverName},
+		'port' => $accurevInfo->{serverPort},
+		'streams' => $stream,
+		'transaction' => $transaction_num,
+		'principal' => $principal,
+		'reason' => $reason
+	});
+	if(!messageSucceeded($response->status_line)) {
+		print "Invalid crumb, fetching new \n";
+		my ($crumbUpdated, $crumbRequestFieldUpdated) = updateCrumb($url);
+		updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
+		print "Trying to trigger stream again. \n";
+		$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
+		$userAgent->post($urlToJenkins, {
+			'host' => $accurevInfo->{serverName},
+			'port' => $accurevInfo->{serverPort},
+			'streams' => $stream,
+			'transaction' => $transaction_num,
+			'principal' => $principal,
+			'reason' => $reason
+		});
+	}
 }
 
 sub messageSucceeded {
@@ -172,7 +143,6 @@ sub readJenkinsConfigFile {
 		close $fh;
 	}
 	my $jenkinsConfig = decode_json($json);
-
 	my $jenkinsUrl = $jenkinsConfig->{'config'}->{'url'};
 	my $crumb = $jenkinsConfig->{'config'}->{'authentication'}->{'crumb'};
 	my $crumbRequestField = $jenkinsConfig->{'config'}->{'authentication'}->{'crumbRequestField'};
@@ -205,7 +175,7 @@ sub updateJenkinsConfigFile {
 	close $fh;
 }
 
-# we don't wanna process workspaces and keep for now
+# we don't want to process workspaces and keep for now
 sub parseCommandToReason{
   my ($command) = @_;
   my $reason;
@@ -213,16 +183,15 @@ sub parseCommandToReason{
     $reason="created";
   }elsif($command ~~ ["rmdepot" , "rmstream"] ){
     $reason="deleted";
-  }elsif($command ~~ ["defcomp", "gatingAction", "promote"] ){ #chstream as rebase
+  }elsif($command ~~ ["defcomp", "gatingAction", "promote", "postPromote"] ){ #chstream as rebase
     $reason="updated";
   }else{
     $reason="unknown";
   }
-  
   return $reason;
 }
 
-sub copyInputFile {
+sub cacheInputFile {
 	my ($file, $stream, $transaction_num) = @_;
 	# copy XML trigger input file to new location
     my $dir = "temp";

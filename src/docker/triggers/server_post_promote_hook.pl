@@ -54,18 +54,13 @@
 use strict;
 use File::Basename;
 use XML::Simple;
-use LWP::UserAgent (); # try delete
-
 use File::Copy;
 use File::Path qw(make_path);
-
-use Encode qw(encode_utf8); # try delete
-use HTTP::Request (); # try delete
-use JSON::MaybeXS qw(encode_json); # try delete
 use lib dirname (__FILE__);
 use warnings;
+
 use JenkinsHook;
-use JenkinsHook('updateCrumb');
+use AccurevUtils;
 
 sub main
 {
@@ -190,10 +185,10 @@ sub main
     #
     # Windows:
     # system("$::AccuRevBin\\server_ot_promote", $file, $file2);
-	copyInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
+	cacheInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
 	
 	system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"".generateCustomIcon("running", "", "Processing transaction $transaction_num")."\"");
-    my $command = "gatingAction"; # postPromote
+    my $command = "postPromote";
     notifyBuild($command, $stream, $depot, $transaction_num);
 
 	# $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
@@ -219,29 +214,6 @@ sub main
     close STDIN;
     close STDOUT;
     exit (0);
-
 }
-
-# generate the streamCustomIcon xml
-#  status should be a string with one of the allowed icon images: running, failed, success, warning
-#  url is the url to open a browser on when you click on the icon
-#  tooltip is the string to show as the tooltip when you hover over the icon
-sub generateCustomIcon($$$) {
-   my($xml);
-   my($status, $url, $tooltip) = ($_[0], $_[1], $_[2]);
-   $xml = "<streamicon>";
-   if (length($status) gt 0) {
-      $xml = $xml . "<image>" . $status . "</image>";
-   }
-   if (length($url) gt 0) {
-      $xml = $xml . "<clickurl>" . $url . "</clickurl>";
-   }
-   if (length($tooltip) gt 0) {
-      $xml = $xml . "<tooltip>" . $tooltip . "</tooltip>";
-   }
-   $xml = $xml . "</streamicon>";
-   return $xml;
-}
-
 
 &main();

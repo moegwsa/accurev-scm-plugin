@@ -71,7 +71,6 @@ use File::Copy;
 use File::Basename;
 use lib dirname (__FILE__);
 use JenkinsHook;
-use JenkinsHook('updateCrumb');
 
 sub main
 {
