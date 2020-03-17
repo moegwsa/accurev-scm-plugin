@@ -328,7 +328,7 @@ sub runGatingAction{
     # Populate the files associated with this transaction
     # system("$::AccuRev pop -v \"$staging_stream\" -t $trn_arg -O -R -L . .");
 
-	notifyBuild("gatingAction", $staging_stream, $depot, $transaction_num);
+	notifyBuild(AccurevUtils->UPDATED, $staging_stream, $depot, $transaction_num);
 
 	# Set stream property to running, if it is not set before server_master_trig.pl script closes, Accurev will go into an error state where no triggers can be triggered
 	my $result = 'running';

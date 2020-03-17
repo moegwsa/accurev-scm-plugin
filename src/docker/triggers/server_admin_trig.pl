@@ -71,6 +71,7 @@ use File::Copy;
 use File::Basename;
 use lib dirname (__FILE__);
 use JenkinsHook;
+use AccurevUtils;
 
 sub main
 {
@@ -606,7 +607,7 @@ sub main
             exit(1);
         }
         # end of EXAMPLE VALIDATION
-		notifyBuild($command, $stream1, $depot, $principal);
+		notifyBuild(AccurevUtils->UPDATED, $stream1, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -646,13 +647,11 @@ sub main
         # end of EXAMPLE VALIDATION
 		# Rebase stream
 		if($stream3 eq '') {
-			notifyBuild($command, $stream1, $depot, $principal);
+			notifyBuild(AccurevUtils->UPDATED, $stream1, $depot, $principal);
 		# Rename stream
 		}else{
-			notifyBuild($command, $stream3, $depot, $principal);
+			notifyBuild(AccurevUtils->CREATED, $stream3, $depot, $principal);
 		}
-
-
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -704,7 +703,7 @@ sub main
         }
         # end of EXAMPLE VALIDATION 2
 
-        notifyBuild($command, $stream1, $depot, $principal);
+        notifyBuild(AccurevUtils->CREATED, $stream1, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -785,7 +784,7 @@ sub main
             exit(1);
         }
         # end of EXAMPLE VALIDATION 3
-        notifyBuild($command, $objectName, $depot, $principal);
+        notifyBuild(AccurevUtils->DELETED, $objectName, $depot, $principal);
         # no problems, allow command to proceed
         close TIO;
         exit(0);
@@ -845,7 +844,7 @@ sub main
             exit(1);
         }
         # end of EXAMPLE VALIDATION 2
-        notifyBuild($command, $objectName, $depot, $principal);
+        notifyBuild(AccurevUtils->CREATED, $objectName, $depot, $principal);
         
         # no problems, allow command to proceed
         close TIO;

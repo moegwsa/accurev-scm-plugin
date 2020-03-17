@@ -8,7 +8,6 @@ use Scalar::Util qw(looks_like_number);
 
 use File::Copy;
 use File::Path qw(make_path);
-use experimental 'smartmatch';
 
 use utf8;
 use JSON qw//;
@@ -25,7 +24,7 @@ our @EXPORT_OK = qw(updateCrumb);
 
 sub notifyBuild {
 	my (@parameters) = @_;
-	my $command = $parameters[0];
+	my $reason = $parameters[0];
 	my $stream = $parameters[1];
 	my $depot = $parameters[2];
 	my $transaction_num = $parameters[3];
@@ -36,7 +35,7 @@ sub notifyBuild {
 		$principal=$parameters[3];
 	}
 	
-	print "Triggered stream: $stream - Cause: $command\n";
+	print "Triggered stream: $stream\n";
 
 	my $url = "localhost:5050";
 	my $crumbRequestField = "";
@@ -72,10 +71,8 @@ sub notifyBuild {
 	$userAgent->default_header($crumbRequestField => $crumb);
 	my $xmlInput = `accurev info -fx`;
 	my $accurevInfo = XMLin($xmlInput);
-	print "Parsing input command to Reason \n";
-    my $reason = parseCommandToReason($command);
 
-	print "Triggering Stream on Jenkins. By $reason because of $command \n";
+	print "Triggering Stream on Jenkins. By $reason \n";
 	# WHEN NOT TESTING ON LOCALHOST, USE $accurevInfo->{serverName} FOR HOST
 	# Create a post call to the Jenkins server with the information regarding the stream that was promoted from
 	if($principal eq '') {
@@ -173,22 +170,6 @@ sub updateJenkinsConfigFile {
 	open(my $fh, ">", $jenkinsConfigFile);
 	print $fh $jenkinsConfigUpdated;
 	close $fh;
-}
-
-# we don't want to process workspaces and keep for now
-sub parseCommandToReason{
-  my ($command) = @_;
-  my $reason;
-  if($command ~~ ["mkdepot" , "mkstream","reactivated","chstream"] ){ #chstream as rename
-    $reason="created";
-  }elsif($command ~~ ["rmdepot" , "rmstream"] ){
-    $reason="deleted";
-  }elsif($command ~~ ["defcomp", "gatingAction", "promote", "postPromote"] ){ #chstream as rebase
-    $reason="updated";
-  }else{
-    $reason="unknown";
-  }
-  return $reason;
 }
 
 sub cacheInputFile {

@@ -188,8 +188,7 @@ sub main
 	cacheInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
 	
 	system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"".generateCustomIcon("running", "", "Processing transaction $transaction_num")."\"");
-    my $command = "postPromote";
-    notifyBuild($command, $stream, $depot, $transaction_num);
+    notifyBuild(AccurevUtils->UPDATED, $stream, $depot, $transaction_num);
 
 	# $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
 	
