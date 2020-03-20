@@ -65,20 +65,18 @@ sub notifyBuild {
 	my $urlToJenkins ="http://$url/accurev/notifyCommit/";
     print "Attempting to notify $urlToJenkins \n";
 	my $userAgent = LWP::UserAgent->new;
-  
 	# Set timeout for post calls to 10 seconds.
 	$userAgent->timeout(10);
 	$userAgent->default_header($crumbRequestField => $crumb);
 	my $xmlInput = `accurev info -fx`;
 	my $accurevInfo = XMLin($xmlInput);
 
-	print "Triggering Stream on Jenkins. By $reason \n";
 	# WHEN NOT TESTING ON LOCALHOST, USE $accurevInfo->{serverName} FOR HOST
 	# Create a post call to the Jenkins server with the information regarding the stream that was promoted from
-	if($principal eq '') {
+	if(defined $principal) {
 		$principal = "gatingActionPrincipal";
 	}
-	print "Notifying for: $urlToJenkins for other than postPromote and gatingAction \n";
+	print "Notifying for: $urlToJenkins \n";
 	my $response = $userAgent->post($urlToJenkins, {
 		'host' => $accurevInfo->{serverName},
 		'port' => $accurevInfo->{serverPort},
@@ -93,7 +91,7 @@ sub notifyBuild {
 		updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 		print "Trying to trigger stream again. \n";
 		$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
-		$userAgent->post($urlToJenkins, {
+		$response = $userAgent->post($urlToJenkins, {
 			'host' => $accurevInfo->{serverName},
 			'port' => $accurevInfo->{serverPort},
 			'streams' => $stream,
@@ -101,6 +99,8 @@ sub notifyBuild {
 			'principal' => $principal,
 			'reason' => $reason
 		});
+		print $response->status_line;
+		print print $response->content;
 	}
 }
 
@@ -176,11 +176,12 @@ sub cacheInputFile {
 	my ($file, $stream, $transaction_num) = @_;
 	# copy XML trigger input file to new location
     my $dir = "temp";
-    my $filecopy = $dir."\\gated_input_file-".$stream."-".$transaction_num.".xml";
+    my $filecopy = $dir."/gated_input_file-".$stream."-".$transaction_num.".xml";
     eval { make_path($dir) };
     if ($@) {
        print "Couldn't create $dir: $@";
     }
+	print "copying file: $filecopy";
     copy($file, $filecopy);
 }
 

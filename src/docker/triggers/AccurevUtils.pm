@@ -3,6 +3,10 @@ package AccurevUtils;
 use warnings;
 use strict;
 use Exporter qw(import);
+use File::Basename;
+use File::Spec::Functions qw(rel2abs);
+use File::Spec;
+
 use constant {
     CREATED => 'created',
     UPDATED => 'updated',

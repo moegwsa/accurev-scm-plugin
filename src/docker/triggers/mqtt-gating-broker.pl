@@ -85,13 +85,16 @@ sub mqttListener {
                 my $streamType = $xmlinput->{stream}->{type};
                 if ($streamType eq 'staging') {
                     # Unlock the staging stream
+                    $log->msg(2,"received $result from staging stream");
                     system("accurev unlock -kf \"$staging_stream\"");
 
                     # Promote the changes
+                    $log->msg(2,"stream is: $staging_stream and transaction number is $transaction_num");
                     my $principalAndComment = getPrincipalAndComment($staging_stream, $transaction_num);
                     $log->msg(2, "principalAndComment is: " . $principalAndComment . "\n");
                     my $promote_result;
                     if (not looks_like_number($principalAndComment)) {
+                        $log->msg(2, "promoting $principalAndComment to $staging_stream");
                         $promote_result = system("accurev promote -s \"$staging_stream\" -d -t $transaction_num -c \"$principalAndComment\"");
                     }
 
@@ -154,6 +157,8 @@ sub getPrincipalAndComment {
     my ($stream, $transaction_num) = @_;
     my $dir = dirname(rel2abs($0));
     my $file = "$dir/../temp/gated_input_file-$stream-$transaction_num.xml";
+    #my $dir = "temp";
+    #my $file = $dir."/gated_input_file-".$stream."-".$transaction_num.".xml";
     if (-e $file) {
         print $file . ": is found \n";
         open TIO, "<$file" or die "Can't open $file";

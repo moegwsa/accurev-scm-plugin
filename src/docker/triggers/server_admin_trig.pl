@@ -63,11 +63,11 @@
 
 ################ START OF TRIGGER SCRIPT CODE
 
+use warnings;
 use XML::Simple;
 use Data::Dumper;
 use strict;
 use File::Copy;
-
 use File::Basename;
 use lib dirname (__FILE__);
 use JenkinsHook;
@@ -238,10 +238,6 @@ sub main
     foreach $elem_name (@{$$xmlinput{'elemList'}[0]{'elem'}}) {
        push (@elems, $elem_name);
     }
-
-	print "server_admin_trig: $command was here\n";
-	print "Stream changed: $stream1 \n";
-
 
     ###
     ### prevent recursion by quitting early for certain commands
@@ -681,7 +677,7 @@ sub main
 
 	# EXAMPLE VALIDATION 1:
 	# only a user listed as an administrator can create a new snapshot
-
+        print "mkstream called by: $command for $stream1 and $stream2";
         if ($streamType eq "snapshot" and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
 	    print TIO "Making a snapshot disallowed:\n";
 	    print TIO "server_admin_trig: Only a member of the group $admingrp can create snapshots.\n";
@@ -784,7 +780,10 @@ sub main
             exit(1);
         }
         # end of EXAMPLE VALIDATION 3
-        notifyBuild(AccurevUtils->DELETED, $objectName, $depot, $principal);
+        if($objectType eq "3"){
+            #Only trigger build if object of type Stream
+            notifyBuild(AccurevUtils->DELETED, $objectName, $depot, $principal);
+        }
         # no problems, allow command to proceed
         close TIO;
         exit(0);
