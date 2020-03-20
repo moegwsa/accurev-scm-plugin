@@ -9,6 +9,7 @@ import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class DefaultBuildChooser extends BuildChooser {
@@ -30,16 +31,17 @@ public class DefaultBuildChooser extends BuildChooser {
         }
         //Only look at changes since current transaction when building Staging Streams.
         long defaultBuild = 0;
+        Collection<AccurevTransaction> cAT = new ArrayList<AccurevTransaction>();
         if (ac.fetchStream(ss.getDepot(),ss.getName()).getType().equals(AccurevStreamType.Staging)){
-            defaultBuild = ac.fetchTransaction(ss.getName()).getId();
+            cAT.add(ac.fetchTransaction(ss.getName()));
+            System.out.println(defaultBuild);
+        }else {
+            cAT = ac.getUpdatesFromAncestors(
+                    ss.getDepot(),
+                    ss.getName(),
+                    (data.lastBuild != null ? data.lastBuild.transaction.getId() : defaultBuild) // Compare to the Transaction ID of the last build we began.
+            );
         }
-
-        Collection<AccurevTransaction> cAT = ac.getUpdatesFromAncestors(
-            ss.getDepot(),
-            ss.getName(),
-            (data.lastBuild != null ? data.lastBuild.transaction.getId() : defaultBuild) // Compare to the Transaction ID of the last build we began.
-        );
-
         if(!cAT.isEmpty()) listener.getLogger().println("New updates:");
         else listener.getLogger().println("No changes found");// TODO What if no changes happens, no new updates
 

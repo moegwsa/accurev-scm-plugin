@@ -311,20 +311,47 @@ public class IntegrationTest {
 
     @Test
     public void HideEmptyStatingStreamsProjectTest() throws Exception{
-
         rule.jenkins.disableSecurity();
         rule.jenkins.save();
 
         WorkflowMultiBranchProject multiProject = rule.jenkins.createProject(WorkflowMultiBranchProject.class, "demo");
-        SCMTrigger trigger = new SCMTrigger("");
-        multiProject.addTrigger(trigger);
-        trigger.start(multiProject, true);
+//        SCMTrigger trigger = new SCMTrigger("");
+//        multiProject.addTrigger(trigger);
+//        trigger.start(multiProject, true);
 
         client = AccurevTestExtensions.createClientAtDir(multiProject.getComputationDir(), url, username, password);
-        File jenkinsFile = AccurevTestExtensions.createFile(multiProject.getComputationDir().getPath(), "Jenkinsfile",  "node {checkout scm; echo 'initial content'; mqttResponse('localhost:8883')}");
         String depot = AccurevTestExtensions.generateString(10);
+
+        // Add accurev credentials to store
+        IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
+        CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
+                .addCredentials(Domain.global(), c);
+
+
+        File jenkinsFile = AccurevTestExtensions.createFile(
+                multiProject.getComputationDir().getPath(),
+                "Jenkinsfile",
+                "pipeline {\n" +
+                        "agent any\n" +
+                        "   stages {\n" +
+                        "       stage('single') {\n" +
+                        "           steps ('checkout') {\n" +
+                        "                   accurev host: '" + host + "', port: '"+  port + "', depot: '" + depot + "', stream: '" + depot + "', credentialsId: '" + c.getId() + "'  \n" +
+                        "                   \n" +
+                        "           }\n" +
+                        "       }\n" +
+                        "   }\n" +
+                        "   post {\n" +
+                        "           always {\n" +
+                        "                   mqttResponse('localhost:8883')\n" +
+                        "           }\n" +
+                        "   }\n" +
+                        "}\n");
+                // Create Depot with trigger
         client.depot().create(depot).execute();
         attachPromoteTrigger(depot);
+
+        //Add jenkinsfile to top stream
         String workspace1 = AccurevTestExtensions.generateString(10);
         client.workspace().create(workspace1, depot).execute();
         List<String> files = new ArrayList<>();
@@ -332,39 +359,48 @@ public class IntegrationTest {
         client.add().add(files).comment("test").execute();
         client.promote().files(files).comment("test").execute();
 
+        //Create a gated stream
         String stream = AccurevTestExtensions.generateString(10);
         client.stream().create(stream, depot,true).execute();
 
-        // Add accurev credentials to store
-        IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
-        CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
-                .addCredentials(Domain.global(), c);
-
+        // Discover Stating streams
         AccurevSCMSource accurevSCMSource = new AccurevSCMSource(null, "localhost", "5050", depot, "1");
-
         accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,true)));
 
+        // Find builds
         multiProject.getSourcesList().add(new BranchSource(accurevSCMSource, new DefaultBranchPropertyStrategy(new BranchProperty[0])));
-
         multiProject.scheduleBuild2(0).getFuture().get();
 
         rule.waitUntilNoActivity();
 
-        assertEquals(2, multiProject.getAllJobs().size());
+        // We only expects to find the top stream due to not listing gated streams.
+        assertEquals(1, multiProject.getAllJobs().size());
 
+        //Create workspace under gated stream
         client = AccurevTestExtensions.createClientAtDir(multiProject.getJobsDir(), url, username, password);
-
         String workspace2 = AccurevTestExtensions.generateString(10);
         client.workspace().create(workspace2, stream).execute();
-        File file = AccurevTestExtensions.createFile(multiProject.getJobsDir().getPath(), "File",  "initial file");
 
+        // Promote new file, should trigger an update
+        File file = AccurevTestExtensions.createFile(multiProject.getJobsDir().getPath(), "File",  "initial file");
         files = new ArrayList<>();
         files.add(file.getAbsolutePath());
         client.add().add(files).comment("test new file").execute();
         client.promote().files(files).comment("test new file").execute();
-
+        Thread.sleep(20000);
         rule.waitUntilNoActivity();
+
+        // We should now have both the top stream, and the staging stream.
         assertEquals(2, multiProject.getAllJobs().size());
+        Thread.sleep(20000);
+
+        // search for streams again due to not sending a delete event from broker
+        multiProject.scheduleBuild2(0).getFuture().get();
+        rule.waitUntilNoActivity();
+
+        // Now only the top stream should exists
+        long size = multiProject.getAllJobs().size();
+        assertEquals(1, multiProject.getAllJobs().size());
     }
 
     private void sendMQTTMessage(String topic, String content) throws UnsupportedEncodingException {

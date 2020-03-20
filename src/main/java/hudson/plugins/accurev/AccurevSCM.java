@@ -344,7 +344,7 @@ public class AccurevSCM extends SCM implements Serializable {
             final String singleStream = environment.expand( getSingleStream() );
 
             candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
-
+            listener.getLogger().println(candidates.isEmpty());
         }
 
         Build transToBuild;

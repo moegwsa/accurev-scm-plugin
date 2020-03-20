@@ -27,6 +27,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 
 public class MqttResponseStep extends Notifier implements SimpleBuildStep{
@@ -47,11 +48,13 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
     public void perform(@Nonnull final Run<?, ?> run, @Nonnull final FilePath workspace, @Nonnull final Launcher launcher, @Nonnull final TaskListener listener) throws InterruptedException, IOException {
 
         // TODO: Find a better way to access buildData
-        BuildData buildData = null;
-        for(final Action a : run.getAllActions()) {
-            if (a instanceof BuildData) buildData = (BuildData) a;
-        }
-
+        BuildData buildData = run.getActions(BuildData.class).get(0);
+        List<BuildData> buildDataActions = run.getActions(BuildData.class);
+        long size = buildDataActions.size();
+//        for(final Action a : run.getAllActions()) {
+//            if (a instanceof BuildData) buildData = (BuildData) a;
+//        }
+        
         // Using $RUN_DISPLAY_URL instead of $BUILD_URL due to blue ocean link.
         final String content = this.replaceVariables("$RUN_DISPLAY_URL", run, listener) + "\n"
                 + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n";
