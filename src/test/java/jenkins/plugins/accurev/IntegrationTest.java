@@ -104,7 +104,7 @@ public class IntegrationTest {
                 arg.add("perl");
                 arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
-                arg.add("host.docker.internal");
+                arg.add("http://host.docker.internal");
                 return arg;
             }
         };
@@ -315,9 +315,6 @@ public class IntegrationTest {
         rule.jenkins.save();
 
         WorkflowMultiBranchProject multiProject = rule.jenkins.createProject(WorkflowMultiBranchProject.class, "demo");
-//        SCMTrigger trigger = new SCMTrigger("");
-//        multiProject.addTrigger(trigger);
-//        trigger.start(multiProject, true);
 
         client = AccurevTestExtensions.createClientAtDir(multiProject.getComputationDir(), url, username, password);
         String depot = AccurevTestExtensions.generateString(10);
@@ -363,7 +360,7 @@ public class IntegrationTest {
         String stream = AccurevTestExtensions.generateString(10);
         client.stream().create(stream, depot,true).execute();
 
-        // Discover Stating streams
+        // Discover Staging streams
         AccurevSCMSource accurevSCMSource = new AccurevSCMSource(null, "localhost", "5050", depot, "1");
         accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,true)));
 
@@ -372,6 +369,8 @@ public class IntegrationTest {
         multiProject.scheduleBuild2(0).getFuture().get();
 
         rule.waitUntilNoActivity();
+        // should be transaction 4.
+        assertTrue(getBrokerLog().contains("Transaction built: 4"));
 
         // We only expects to find the top stream due to not listing gated streams.
         assertEquals(1, multiProject.getAllJobs().size());
@@ -394,6 +393,9 @@ public class IntegrationTest {
         assertEquals(2, multiProject.getAllJobs().size());
         Thread.sleep(20000);
 
+        // should be transaction number 9.
+        assertTrue(getBrokerLog().contains("Transaction built: 9"));
+
         // search for streams again due to not sending a delete event from broker
         multiProject.scheduleBuild2(0).getFuture().get();
         rule.waitUntilNoActivity();
@@ -401,6 +403,78 @@ public class IntegrationTest {
         // Now only the top stream should exists
         long size = multiProject.getAllJobs().size();
         assertEquals(1, multiProject.getAllJobs().size());
+    }
+
+    @Test
+    public void TransactionNumberAutoPromote() throws Exception{
+        rule.jenkins.disableSecurity();
+        rule.jenkins.save();
+
+        WorkflowMultiBranchProject multiProject = rule.jenkins.createProject(WorkflowMultiBranchProject.class, "demo");
+        client = AccurevTestExtensions.createClientAtDir(multiProject.getComputationDir(), url, username, password);
+        String depot = AccurevTestExtensions.generateString(10);
+
+        // Add accurev credentials to store
+        IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
+        CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
+                .addCredentials(Domain.global(), c);
+
+        File jenkinsFile = AccurevTestExtensions.createFile(
+                multiProject.getComputationDir().getPath(),
+                "Jenkinsfile",
+                "pipeline {\n" +
+                        "agent any\n" +
+                        "   stages {\n" +
+                        "       stage('single') {\n" +
+                        "           steps ('checkout') {\n" +
+                        "                   accurev host: '" + host + "', port: '"+  port + "', depot: '" + depot + "', stream: '" + depot + "', credentialsId: '" + c.getId() + "'  \n" +
+                        "                   \n" +
+                        "           }\n" +
+                        "       }\n" +
+                        "   }\n" +
+                        "   post {\n" +
+                        "           always {\n" +
+                        "                   mqttResponse('localhost:8883')\n" +
+                        "           }\n" +
+                        "   }\n" +
+                        "}\n");
+        // Create Depot with trigger
+        client.depot().create(depot).execute(); //Transaction 1
+
+        //Add jenkinsfile to stream
+        String workspace1 = AccurevTestExtensions.generateString(10);
+        client.workspace().create(workspace1, depot).execute();
+        List<String> files = new ArrayList<>();
+        files.add(jenkinsFile.getAbsolutePath());
+        client.add().add(files).comment("test").execute();
+        client.promote().files(files).comment("test").execute();
+
+        //Attach trigger
+        attachPromoteTrigger(depot);
+
+        // Discover streams
+        AccurevSCMSource accurevSCMSource = new AccurevSCMSource(null, "localhost", "5050", depot, "1");
+        accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,true)));
+
+        // Find builds
+        multiProject.getSourcesList().add(new BranchSource(accurevSCMSource, new DefaultBranchPropertyStrategy(new BranchProperty[0])));
+        multiProject.scheduleBuild2(0).getFuture().get();
+
+        rule.waitUntilNoActivity();
+        Thread.sleep(20000);
+
+        assertTrue(getBrokerLog().contains("Transaction built: 4"));
+
+        // Promote new file, should trigger an update
+        File file = AccurevTestExtensions.createFile(multiProject.getComputationDir().getPath(), "File",  "initial file");
+        files = new ArrayList<>();
+        files.add(file.getAbsolutePath());
+        client.add().add(files).comment("test new file").execute();
+        client.promote().files(files).comment("test new file").execute();
+
+        Thread.sleep(20000);
+        rule.waitUntilNoActivity();
+        assertTrue(getBrokerLog().contains("Transaction built: 6"));
     }
 
     private void sendMQTTMessage(String topic, String content) throws UnsupportedEncodingException {

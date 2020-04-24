@@ -677,7 +677,7 @@ sub main
 
 	# EXAMPLE VALIDATION 1:
 	# only a user listed as an administrator can create a new snapshot
-        print "mkstream called by: $command for $stream1 and $stream2";
+
         if ($streamType eq "snapshot" and `$::AccuRev ismember $principal "$admingrp"` == 0 ) {
 	    print TIO "Making a snapshot disallowed:\n";
 	    print TIO "server_admin_trig: Only a member of the group $admingrp can create snapshots.\n";

@@ -28,6 +28,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 
 public class MqttResponseStep extends Notifier implements SimpleBuildStep{
@@ -49,12 +50,10 @@ public class MqttResponseStep extends Notifier implements SimpleBuildStep{
 
         // TODO: Find a better way to access buildData
         BuildData buildData = run.getActions(BuildData.class).get(0);
-        List<BuildData> buildDataActions = run.getActions(BuildData.class);
-        long size = buildDataActions.size();
-//        for(final Action a : run.getAllActions()) {
-//            if (a instanceof BuildData) buildData = (BuildData) a;
-//        }
-        
+
+        //BuildData buildData1 = (BuildData) run.getActions(BuildData.class).stream()
+        //        .filter(item -> item.remoteStreams));
+
         // Using $RUN_DISPLAY_URL instead of $BUILD_URL due to blue ocean link.
         final String content = this.replaceVariables("$RUN_DISPLAY_URL", run, listener) + "\n"
                 + this.replaceVariables("$BUILD_RESULT", run, listener) + "\n";

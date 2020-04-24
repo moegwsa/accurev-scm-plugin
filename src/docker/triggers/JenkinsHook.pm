@@ -39,7 +39,7 @@ sub notifyBuild {
 
 	my $url = "localhost:5050";
 	my $crumbRequestField = "";
-	my $crumb;
+	my $crumb = 1;
 	my $jenkinsConfigFile = 'triggers/jenkinsConfig.json';
 
 	if (-e $jenkinsConfigFile) {
@@ -55,19 +55,21 @@ sub notifyBuild {
 			print "Updating Jenkins configuration file with newly obtained crumb.\n";
 			updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 			$crumb = $crumbUpdated;
-            print "crumb is $crumb \n";
-			$crumbRequestField = $crumbRequestFieldUpdated;
+            $crumbRequestField = $crumbRequestFieldUpdated;
 		}
 	} else {
 		print "No Jenkins configuration file found, defaulting to localhost.\n";
 	}
   
-	my $urlToJenkins ="http://$url/accurev/notifyCommit/";
+	my $urlToJenkins ="$url/accurev/notifyCommit/";
     print "Attempting to notify $urlToJenkins \n";
 	my $userAgent = LWP::UserAgent->new;
 	# Set timeout for post calls to 10 seconds.
 	$userAgent->timeout(10);
-	$userAgent->default_header($crumbRequestField => $crumb);
+	if(not looks_like_number($crumb)){
+		print "adding crumb to header. \n";
+		$userAgent->default_header($crumbRequestField => $crumb);
+	}
 	my $xmlInput = `accurev info -fx`;
 	my $accurevInfo = XMLin($xmlInput);
 
@@ -90,7 +92,10 @@ sub notifyBuild {
 		my ($crumbUpdated, $crumbRequestFieldUpdated) = updateCrumb($url);
 		updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 		print "Trying to trigger stream again. \n";
-		$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
+		if(not looks_like_number($crumb)){
+			print "adding crumb to header. \n";
+			$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
+		}
 		$response = $userAgent->post($urlToJenkins, {
 			'host' => $accurevInfo->{serverName},
 			'port' => $accurevInfo->{serverPort},
@@ -99,8 +104,9 @@ sub notifyBuild {
 			'principal' => $principal,
 			'reason' => $reason
 		});
-		print $response->status_line;
-		print print $response->content;
+		if(!messageSucceeded($response->status_line)) {
+			print "cannot notify build because: ".$response->code." ".$response->message."\n";
+		}
 	}
 }
 
@@ -115,16 +121,15 @@ sub messageSucceeded {
 
 sub updateCrumb {
 	my ($url) = @_;
-	my $urlToJenkinsApi ="http://$url/crumbIssuer/api/json";
+	my $urlToJenkinsApi ="$url/crumbIssuer/api/json";
     print "$urlToJenkinsApi \n";
 	my $json = JSON->new->utf8;
 	my $userAgent = LWP::UserAgent->new;
 	my $response = $userAgent->get($urlToJenkinsApi);
 	if ($response->is_error) {
-        print "cannot obtain crumb because \n";
-        print $response->code . "\n";
-        print $response->message . "\n";
-    } else {
+        print "cannot obtain crumb because: ".$response->code." ".$response->message."\n";
+		return;
+	} else {
 	    my $responseInJson = $json->decode($response->decoded_content);
 	    return ($responseInJson->{'crumb'}, $responseInJson->{'crumbRequestField'});
     }
@@ -149,27 +154,30 @@ sub readJenkinsConfigFile {
 
 sub updateJenkinsConfigFile {
 	my ($jenkinsConfigFile, $crumb, $crumbRequestField) = @_;
+	if (-e $jenkinsConfigFile) {
+		my $jenkinsConfigJson;
+		{
+			local $/; #Enable 'slurp' mode
+			open my $fh, "<", $jenkinsConfigFile or die $!;
+			$jenkinsConfigJson = <$fh>;
+			close $fh;
+		}
+		my $jenkinsConfigJsonDecoded = decode_json($jenkinsConfigJson);
 
-	my $jenkinsConfigJson;
-	{
-		local $/; #Enable 'slurp' mode
-		open my $fh, "<", $jenkinsConfigFile or die $!;
-		$jenkinsConfigJson = <$fh>;
+		$jenkinsConfigJsonDecoded->{'config'}->{'authentication'}->{'crumb'} = $crumb;
+		$jenkinsConfigJsonDecoded->{'config'}->{'authentication'}->{'crumbRequestField'} = $crumbRequestField;
+
+		my $json = JSON->new->utf8;
+		$json = $json->pretty([ 1 ]);
+
+		my $jenkinsConfigUpdated = $json->encode($jenkinsConfigJsonDecoded);
+
+		open(my $fh, ">", $jenkinsConfigFile);
+		print $fh $jenkinsConfigUpdated;
 		close $fh;
+	} else {
+		print "$jenkinsConfigFile does not exist";
 	}
-	my $jenkinsConfigJsonDecoded = decode_json($jenkinsConfigJson);
-
-	$jenkinsConfigJsonDecoded->{'config'}->{'authentication'}->{'crumb'} = $crumb;
-	$jenkinsConfigJsonDecoded->{'config'}->{'authentication'}->{'crumbRequestField'} = $crumbRequestField;
-
-	my $json = JSON->new->utf8;
-	$json = $json->pretty([1]);
-
-	my $jenkinsConfigUpdated = $json->encode($jenkinsConfigJsonDecoded);
-
-	open(my $fh, ">", $jenkinsConfigFile);
-	print $fh $jenkinsConfigUpdated;
-	close $fh;
 }
 
 sub cacheInputFile {
@@ -184,5 +192,3 @@ sub cacheInputFile {
 	print "copying file: $filecopy";
     copy($file, $filecopy);
 }
-
-1;

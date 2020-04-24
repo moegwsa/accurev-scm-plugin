@@ -86,7 +86,7 @@ public class AccurevSCMTest {
                 arg.add("perl");
                 arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
-                arg.add("host.docker.internal");
+                arg.add("http://host.docker.internal");
                 return arg;
             }
         };

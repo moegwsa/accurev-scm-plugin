@@ -144,6 +144,20 @@ sub mqttListener {
 
                 $log->msg(2, "Set $staging_stream to failed.\n");
             }
+            if ($result eq 'ABORTED'){
+                $result = 'failed';
+                my $tooltip = "the build of transaction $transaction_num was aborted";
+
+                $log->msg(2, "Result: $result\n");
+
+                # Change the icon to the result
+                system("accurev setproperty -r -s \"$staging_stream\" streamCustomIcon \"" . generateCustomIcon($result, $url, $tooltip) . "\"");
+
+                # Report the result (this must be the last accurev command before exiting the trigger)
+                system("accurev setproperty -r -s \"$staging_stream\" stagingStreamResult \"$result\"");
+
+                $log->msg(2, "Set $staging_stream to failed.\n");
+            }
         }
     );
 }
@@ -169,6 +183,7 @@ sub getPrincipalAndComment {
         }
         close TIO;
 
+        unlink $file;
         # populate array using XML::Simple routine
         my $xmlinput = XMLin($xmlinput_raw, forcearray => 1, suppressempty => '');
 
