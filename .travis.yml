@@ -8,7 +8,7 @@ before_install:
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
 script:
-  - mvn -e -Dmaven.test.skip=false -Dsurefire.useFile=false clean test package
+  - mvn -e -Dmaven.test.skip=false -Dsurefire.useFile=false clean test package --settings ./settings.xml
   - mvn surefire-report:report-only
   - cat target/surefire-reports/*.txt
 deploy:
