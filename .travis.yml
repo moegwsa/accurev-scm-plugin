@@ -7,7 +7,7 @@ before_install:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker pull ehhnwidex/accurev:latest
   - docker ps -a
-  - mvn install --settings ./settings.xml
+  - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V --settings ./settings.xml
 script:
   - mvn -e -Dmaven.test.skip=false -Dsurefire.useFile=false clean test package --settings ./settings.xml
   - mvn surefire-report:report-only
