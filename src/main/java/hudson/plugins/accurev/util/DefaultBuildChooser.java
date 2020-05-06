@@ -8,6 +8,7 @@ import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
+import jenkins.plugins.accurevclient.model.AccurevTransactions;
 
 import java.util.Collection;
 
@@ -28,17 +29,19 @@ public class DefaultBuildChooser extends BuildChooser {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        Collection<AccurevTransaction> cAT;
         //Only look at changes since current transaction when building Staging Streams.
-        long defaultBuild = 0;
         if (ac.fetchStream(ss.getDepot(),ss.getName()).getType().equals(AccurevStreamType.Staging)){
-            defaultBuild = ac.fetchTransaction(ss.getName()).getId();
+            AccurevTransactions accurevTransactions = ac.getActiveTransactions(ss.getName());
+            cAT = accurevTransactions.getTransactions();
+        } else {
+            long defaultBuild = 0;
+            cAT = ac.getUpdatesFromAncestors(
+                    ss.getDepot(),
+                    ss.getName(),
+                    (data.lastBuild != null ? data.lastBuild.transaction.getId() : defaultBuild) // Compare to the Transaction ID of the last build we began.
+            );
         }
-
-        Collection<AccurevTransaction> cAT = ac.getUpdatesFromAncestors(
-            ss.getDepot(),
-            ss.getName(),
-            (data.lastBuild != null ? data.lastBuild.transaction.getId() : defaultBuild) // Compare to the Transaction ID of the last build we began.
-        );
 
         if(!cAT.isEmpty()) listener.getLogger().println("New updates:");
         else listener.getLogger().println("No changes found");// TODO What if no changes happens, no new updates
