@@ -357,6 +357,11 @@
             <version>2.21</version>
         </dependency>
         <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>strict-crumb-issuer</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps-global-lib</artifactId>
             <version>2.14</version>

@@ -10,6 +10,7 @@ import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import jenkins.plugins.accurevclient.model.AccurevTransactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class DefaultBuildChooser extends BuildChooser {
@@ -42,7 +43,6 @@ public class DefaultBuildChooser extends BuildChooser {
                     (data.lastBuild != null ? data.lastBuild.transaction.getId() : defaultBuild) // Compare to the Transaction ID of the last build we began.
             );
         }
-
         if(!cAT.isEmpty()) listener.getLogger().println("New updates:");
         else listener.getLogger().println("No changes found");// TODO What if no changes happens, no new updates
 

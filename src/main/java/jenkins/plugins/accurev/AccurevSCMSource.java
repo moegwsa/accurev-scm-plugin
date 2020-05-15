@@ -217,7 +217,7 @@ public class AccurevSCMSource extends SCMSource {
 
             for (AccurevStream stream : streams.getList()) {
 
-                taskListener.getLogger().println("Processing object: " + stream.getName());
+                //taskListener.getLogger().println("Processing object: " + stream.getName());
                 if (!ACcontext.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
                     taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
                     continue;

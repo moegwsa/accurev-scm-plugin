@@ -114,6 +114,7 @@ public class AccurevStatus implements UnprotectedRootAction {
                 switch (lastReason != null ? lastReason : Reason.NONE ) {
                     case CREATED:
                         if (StringUtils.isNotBlank(stream) ) {
+                            System.out.println("notify created action");
                             transaction = transaction.isEmpty() ? transaction : "1";
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.CREATED, new AccurevCommitPayload(uri, stream, transaction), origin));
