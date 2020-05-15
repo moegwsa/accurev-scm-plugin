@@ -35,7 +35,7 @@
 # Make sure to change the following to the actual path of accurev bin.
 #
 # Unix Example
- $::AccuRevBin = "/usr/accurev/bin";
+ $::AccuRev = "/home/accurev-user/accurev/bin/accurev";
 ## Windows Example
 #  $::AccuRevBin = "C:\\progra~1\\accurev\\bin";
 #
@@ -45,7 +45,7 @@
 # STEP 5 of 9:
 # Make sure to change the following to the actual path of the accurev client program
 # Unix Example
- $::AccuRev = "/usr/accurev/bin/accurev";
+ $::AccuRev = "/home/accurev-user/accurev/bin/accurev";
 # Windows Example
 #  $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
 #
@@ -54,18 +54,13 @@
 use strict;
 use File::Basename;
 use XML::Simple;
-use LWP::UserAgent ();
-
 use File::Copy;
 use File::Path qw(make_path);
-
-use Encode qw(encode_utf8);
-use HTTP::Request ();
-use JSON::MaybeXS qw(encode_json);
 use lib dirname (__FILE__);
 use warnings;
+
 use JenkinsHook;
-use JenkinsHook('updateCrumb');
+use AccurevUtils;
 
 sub main
 {
@@ -138,8 +133,8 @@ sub main
     # $ENV{'HOME'} = "/home/replace_with_username";
     #
     # Windows Example
-    #$ENV{'HOMEDRIVE'} = "c:";
-    #$ENV{'HOMEPATH'} = "\\Documents and Settings\\TMEL";
+    # $ENV{'HOMEDRIVE'} = "c:";
+    # $ENV{'HOMEPATH'} = "\\Documents and Settings\\replace_with_username";
     #
     # STEP 2:
     # =======
@@ -157,7 +152,7 @@ sub main
     #######################################################
 
     # Validate that the script user is logged in
-    my $loginStatus = `accurev secinfo`;
+    my $loginStatus = `$::AccuRev secinfo`;
     #my $loginStatus = system("$::AccuRev secinfo");
     chomp ($loginStatus);
     if ($loginStatus eq "notauth") {
@@ -190,11 +185,10 @@ sub main
     #
     # Windows:
     # system("$::AccuRevBin\\server_ot_promote", $file, $file2);
-	copyInputFile($file2, $stream, $transaction_num, $principal);
+	cacheInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
 	
 	system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"".generateCustomIcon("running", "", "Processing transaction $transaction_num")."\"");
-    my $command = "gatingAction";
-    createWebhook($command, $stream, $depot, $transaction_num);
+    notifyBuild(AccurevUtils->UPDATED, $stream, $depot, $transaction_num);
 
 	# $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
 	
@@ -219,25 +213,6 @@ sub main
     close STDIN;
     close STDOUT;
     exit (0);
-
 }
-
-sub generateCustomIcon($$$) {
-   my($xml);
-   my($status, $url, $tooltip) = ($_[0], $_[1], $_[2]);
-   $xml = "<streamicon>";
-   if (length($status) gt 0) {
-      $xml = $xml . "<image>" . $status . "</image>";
-   }
-   if (length($url) gt 0) {
-      $xml = $xml . "<clickurl>" . $url . "</clickurl>";
-   }
-   if (length($tooltip) gt 0) {
-      $xml = $xml . "<tooltip>" . $tooltip . "</tooltip>";
-   }
-   $xml = $xml . "</streamicon>";
-   return $xml;
-}
-
 
 &main();

@@ -159,6 +159,9 @@ public class AccurevSCMSource extends SCMSource {
                     System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build gated streams");
                     continue;
                 }
+                if (stream.getType().equals(AccurevStreamType.Gated)){
+                    continue;
+                }
 
                 if(stream.getType().equals(AccurevStreamType.Staging) && accurevClient.getActiveElements(stream.getName()).getFiles().size() == 0){
                     taskListener.getLogger().println("Discarded object: " + stream.getName() + "Because default group is empty");
@@ -216,7 +219,7 @@ public class AccurevSCMSource extends SCMSource {
 
             for (AccurevStream stream : streams.getList()) {
 
-                taskListener.getLogger().println("Processing object: " + stream.getName());
+                //taskListener.getLogger().println("Processing object: " + stream.getName());
                 if (!ACcontext.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
                     taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
                     continue;
