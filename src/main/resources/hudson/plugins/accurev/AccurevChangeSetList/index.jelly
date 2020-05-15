@@ -3,7 +3,7 @@
 <h2>${Summary}</h2>
     <ol>
         <j:forEach var="cs" items="${it.logs}">
-            <li> Transaction: ${cs.id}, message: ${cs.type} (<a href="changes#detail${cs.id}">${%details}</a>)</li>
+            <li> Transaction: ${cs.id}, message: ${cs.type}</li>
         </j:forEach>
     </ol>
 </j:jelly>

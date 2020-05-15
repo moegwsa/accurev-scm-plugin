@@ -34,6 +34,26 @@ THE SOFTWARE.
   for which the change should be displayed.
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
-
-
+  <j:choose>
+    <j:when test="${empty(builds)}">
+      ${%No builds.}
+    </j:when>
+    <j:otherwise>
+      <j:set var="hadChanges" value="${false}"/>
+        <j:forEach var="b" items="${builds}">
+           <j:forEach var="changeSet" items="${b.changeSets}">
+             <h2><a href="${b.number}/changes">${b.displayName}
+               (<i:formatDate value="${b.timestamp.time}" type="both" dateStyle="medium" timeStyle="medium"/>)</a></h2>
+               <ol>
+                 <j:forEach var="cs" items="${changeSet.iterator()}">
+                    <li> Transaction: ${cs.id}, message: ${cs.type}</li>
+                  </j:forEach>
+               </ol>
+             </j:forEach>
+           </j:forEach>
+      <j:if test="${!hadChanges}">
+         ${%No changes in any of the builds.}
+      </j:if>
+    </j:otherwise>
+  </j:choose>
 </j:jelly>
