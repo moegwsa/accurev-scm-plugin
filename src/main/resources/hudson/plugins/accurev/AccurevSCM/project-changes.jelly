@@ -42,6 +42,7 @@ THE SOFTWARE.
       <j:set var="hadChanges" value="${false}"/>
         <j:forEach var="b" items="${builds}">
            <j:forEach var="changeSet" items="${b.changeSets}">
+             <j:set var="hadChanges" value="${true}"/>
              <h2><a href="${b.number}/changes">${b.displayName}
                (<i:formatDate value="${b.timestamp.time}" type="both" dateStyle="medium" timeStyle="medium"/>)</a></h2>
                <ol>
