@@ -119,7 +119,7 @@ public class AccurevSCMFileSystemBuilderTest {
         List<StreamSpec> streamSpecList = new ArrayList<>();
         streamSpecList.add(masterStreamSpec);
         AccurevSCM singleStreamSource = new AccurevSCM(serverRemoteConfigList,
-                streamSpecList, null);
+                streamSpecList, null, null);
         return singleStreamSource;
     }
 

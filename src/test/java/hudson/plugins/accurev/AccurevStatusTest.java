@@ -133,6 +133,7 @@ public class AccurevStatusTest {
         AccurevSCM accurev = new AccurevSCM(
                 Collections.singletonList(new ServerRemoteConfig(host, port, null)),
                 streams,
+                null,
                 null
         );
         project.setScm(accurev);

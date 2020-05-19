@@ -1,6 +1,7 @@
 package jenkins.plugins.accurev;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.plugins.accurev.AccurevRepositoryBrowser;
 import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.ServerRemoteConfig;
 import hudson.plugins.accurev.StreamSpec;
@@ -23,6 +24,9 @@ public class AccurevSCMBuilder<B extends AccurevSCMBuilder<B>> extends SCMBuilde
     private final String depot;
     private List<AccurevSCMExtension> extensions = new ArrayList<>();
 
+    @CheckForNull
+    private AccurevRepositoryBrowser browser;
+
 
     public AccurevSCMBuilder(@NonNull SCMHead head, @CheckForNull SCMRevision revision, @NonNull String remote, String depot,
                              @CheckForNull String credentialsId) {
@@ -32,12 +36,18 @@ public class AccurevSCMBuilder<B extends AccurevSCMBuilder<B>> extends SCMBuilde
         this.depot  = depot;
     }
 
+    @CheckForNull
+    public final AccurevRepositoryBrowser browser(){
+        return browser;
+    }
+
     @NonNull
     @Override
     public AccurevSCM build() {
         return new AccurevSCM(asRemoteConfigs(),
                 Collections.singletonList(new StreamSpec(head().getName(), depot)),
-                extensions
+                extensions,
+                browser
                 );
     }
 
@@ -87,6 +97,14 @@ public class AccurevSCMBuilder<B extends AccurevSCMBuilder<B>> extends SCMBuilde
         this.credentialsId = credentialsId;
         return (B) this;
     }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public final B withBrowser(@CheckForNull AccurevRepositoryBrowser browser) {
+        this.browser = browser;
+        return (B) this;
+    }
+
 
     @NonNull
     public final List<AccurevSCMExtension> extensions() {

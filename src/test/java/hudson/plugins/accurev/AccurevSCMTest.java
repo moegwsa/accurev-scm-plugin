@@ -159,7 +159,7 @@ public class AccurevSCMTest {
         AccurevSCM scm = new AccurevSCM(
                 AccurevSCM.createDepotList(host, port,  "accurev"),
                 Collections.singletonList(new StreamSpec(depot, depot)),
-                null
+                null, null
                         );
         project.setScm(scm);
         return project;

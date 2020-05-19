@@ -1,5 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <j:set var="browser" value="${it.browser}"/>
     <j:choose>
         <j:when test="${it.emptySet}">
             ${%No changes.}
@@ -8,7 +9,11 @@
             Changes
             <ol>
                 <j:forEach var="cs" items="${it.logs}">
-                    <li> Transaction: ${cs.id}, message: ${cs.msg} (<a href="changes#detail${cs.id}">${%details}</a>)</li>
+                   <li> Transaction: ${cs.id}, message: ${cs.msg} (<a href="changes#detail${cs.id}">${%details}</a>)</li>
+                   <j:set var="cslink" value="${browser.getChangeSetLink(cs)}"/>
+                   <j:if test="${cslink!=null}">
+                       <a href="${cslink}">${cs.id}</a>
+                   </j:if>
                 </j:forEach>
             </ol>
         </j:otherwise>
