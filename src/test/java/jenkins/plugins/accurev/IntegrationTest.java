@@ -172,7 +172,7 @@ public class IntegrationTest {
         IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
         CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
                 .addCredentials(Domain.global(), c);
-        AccurevSCM scm = new AccurevSCM(AccurevSCM.createDepotList(host, port, c.getId()), Collections.singletonList(new StreamSpec(depot, depot)), Collections.emptyList());
+        AccurevSCM scm = new AccurevSCM(AccurevSCM.createDepotList(host, port, c.getId()), Collections.singletonList(new StreamSpec(depot, depot)), Collections.emptyList(), null);
         project.setScm(scm);
         trigger.start(project, true);
         project.setQuietPeriod(0);

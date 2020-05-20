@@ -8,18 +8,20 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.Launcher;
-import hudson.Util;
+import hudson.*;
 import hudson.model.*;
 import hudson.model.queue.Tasks;
+import hudson.plugins.accurev.AccurevRepositoryBrowser;
+import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.AccurevSCMRevision;
+import hudson.scm.RepositoryBrowser;
+import hudson.scm.RepositoryBrowsers;
 import hudson.scm.SCM;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import jenkins.plugins.accurev.traits.AccurevBrowserSCMSourceTrait;
 import jenkins.plugins.accurev.traits.BuildItemsDiscoveryTrait;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
@@ -31,11 +33,15 @@ import jenkins.scm.api.*;
 import jenkins.scm.api.trait.SCMSourceRequest;
 import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMSourceTraitDescriptor;
+import jenkins.scm.api.trait.SCMTrait;
 import jenkins.scm.impl.form.NamedArrayList;
 import jenkins.scm.impl.trait.Discovery;
 import jenkins.scm.impl.trait.Selection;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -47,6 +53,7 @@ import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -58,6 +65,9 @@ public class AccurevSCMSource extends SCMSource {
     private final String depot;
     private AccurevClient accurevClient;
     private String credentialsId;
+
+    @Deprecated
+    private transient AccurevRepositoryBrowser browser;
 
     @NonNull
     private List<SCMSourceTrait> traits = new ArrayList<>();
@@ -254,6 +264,7 @@ public class AccurevSCMSource extends SCMSource {
     public SCM build(@NonNull SCMHead head, SCMRevision revision) {
         AccurevSCMBuilder<?> builder = newBuilder(head, revision);
         builder.withTraits(getTraits());
+        builder.withBrowser(getBrowser());
         return builder.build();
     }
 
@@ -273,7 +284,30 @@ public class AccurevSCMSource extends SCMSource {
         this.credentialsId = credentialsId;
     }
 
+    // For Stapler only
+    @Restricted(DoNotUse.class)
+    @DataBoundSetter
+    public void setBrowser(AccurevRepositoryBrowser browser) {
+        List<SCMSourceTrait> traits = new ArrayList<>(this.traits);
+        for (Iterator<SCMSourceTrait> iterator = traits.iterator(); iterator.hasNext(); ) {
+            if (iterator.next() instanceof AccurevBrowserSCMSourceTrait) {
+                iterator.remove();
+            }
+        }
+        if (browser != null) {
+            traits.add(new AccurevBrowserSCMSourceTrait(browser));
+        }
+        setTraits(traits);
+    }
 
+    @CheckForNull
+    @Deprecated
+    @Restricted(NoExternalUse.class)
+    @RestrictedSince("3.4.0")
+    public AccurevRepositoryBrowser getBrowser() {
+        AccurevBrowserSCMSourceTrait trait = SCMTrait.find(getTraits(), AccurevBrowserSCMSourceTrait.class);
+        return trait != null ? trait.getBrowser() : null;
+    }
     @DataBoundConstructor
     @SuppressWarnings("unused") // by stapler
     public AccurevSCMSource(String id, String sourceHost, String sourcePort, String depot, String credentialsId) {
@@ -340,6 +374,8 @@ public class AccurevSCMSource extends SCMSource {
         public List<SCMSourceTraitDescriptor> getTraitDescriptors() {
             return SCMSourceTrait._for(this, AccurevSCMSourceContext.class, AccurevSCMBuilder.class);
         }
+
+
 
         public List<SCMSourceTrait> getTraitsDefaults() {
             return Collections.<SCMSourceTrait>singletonList(new BuildItemsDiscoveryTrait(true, false, false, false, false));
@@ -411,9 +447,25 @@ public class AccurevSCMSource extends SCMSource {
 
         }
 
+
+
         AccurevClient getAccurevClient(String url) {
             AccurevClient client = Accurev.with((TaskListener) () -> null, new EnvVars(), new Launcher.LocalLauncher(null)).on(url).getClient();
             return client;
+        }
+
+        @Deprecated
+        @Restricted(NoExternalUse.class)
+        @RestrictedSince("3.4.0")
+        public AccurevSCM.DescriptorImpl getSCMDescriptor() {
+            return (AccurevSCM.DescriptorImpl)Jenkins.getActiveInstance().getDescriptor(AccurevSCM.class);
+        }
+
+        @Deprecated
+        @Restricted(DoNotUse.class)
+        @RestrictedSince("3.4.0")
+        public List<Descriptor<RepositoryBrowser<?>>> getBrowserDescriptors() {
+            return getSCMDescriptor().getBrowserDescriptors();
         }
     }
 

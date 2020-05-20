@@ -15,15 +15,12 @@ import hudson.Util;
 import hudson.model.*;
 import hudson.model.Queue;
 import hudson.model.queue.Tasks;
+import hudson.plugins.accurev.browsers.AccurevWeb;
 import hudson.plugins.accurev.extensions.AccurevSCMExtension;
 import hudson.plugins.accurev.extensions.AccurevSCMExtensionDescriptor;
 import hudson.plugins.accurev.util.*;
 import hudson.plugins.accurev.util.Build;
-import hudson.scm.ChangeLogParser;
-import hudson.scm.PollingResult;
-import hudson.scm.SCM;
-import hudson.scm.SCMDescriptor;
-import hudson.scm.SCMRevisionState;
+import hudson.scm.*;
 import hudson.security.ACL;
 import hudson.util.DescribableList;
 import jenkins.plugins.accurevclient.Accurev;
@@ -33,6 +30,7 @@ import jenkins.plugins.accurevclient.commands.PopulateCommand;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import net.sf.json.JSONObject;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.jetbrains.annotations.NotNull;
@@ -49,6 +47,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.io.Writer;
+import java.net.MalformedURLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -67,6 +66,9 @@ public class AccurevSCM extends SCM implements Serializable {
     private String source = null;
     private List<StreamSpec> streams;
     private List<ServerRemoteConfig> serverRemoteConfigs;
+
+    @CheckForNull
+    private AccurevRepositoryBrowser repositoryBrowser;
     @SuppressFBWarnings(value="SE_BAD_FIELD", justification="Known non-serializable field")
     private AccurevClient ac;
     @SuppressFBWarnings(value="SE_BAD_FIELD", justification="Known non-serializable field")
@@ -113,11 +115,14 @@ public class AccurevSCM extends SCM implements Serializable {
     }
 
     @DataBoundConstructor
-    public AccurevSCM(List<ServerRemoteConfig> serverRemoteConfigs, List<StreamSpec> streams,  List<AccurevSCMExtension> extensions){
+    public AccurevSCM(List<ServerRemoteConfig> serverRemoteConfigs, List<StreamSpec> streams,  List<AccurevSCMExtension> extensions, @CheckForNull AccurevRepositoryBrowser browser){
         this.streams = isEmpty(streams) ? newArrayList(new StreamSpec("wasEmpty", "")) : streams;
         this.serverRemoteConfigs = serverRemoteConfigs;
         this.extensions = new DescribableList<>(Saveable.NOOP, Util.fixNull(extensions));
+        this.repositoryBrowser = browser;
     }
+
+
 
     @Override
     public ChangeLogParser createChangeLogParser() {
@@ -130,6 +135,27 @@ public class AccurevSCM extends SCM implements Serializable {
         return depotList;
     }
 
+    @Whitelisted
+    @Exported
+    @Override
+    public AccurevRepositoryBrowser getBrowser() {
+        return repositoryBrowser;
+    }
+
+    public void setBrowser(AccurevRepositoryBrowser browser) {
+        this.repositoryBrowser = browser;
+    }
+
+    @CheckForNull
+    @Override
+    public RepositoryBrowser<?> guessBrowser() {
+        try {
+            return new AccurevWeb("https://" + getServerRemoteConfigs().get(0).getHost() + ":8080/accurev/");
+        } catch (MalformedURLException x) {
+            LOGGER.log(Level.FINE, null, x); // OK, could just be a local directory path
+            return null;
+        }
+    }
 
 
     @Override
@@ -520,8 +546,21 @@ public class AccurevSCM extends SCM implements Serializable {
     public static final class DescriptorImpl extends SCMDescriptor<AccurevSCM> {
 
         public DescriptorImpl() {
-            super(AccurevSCM.class, null);
+            super(AccurevSCM.class, AccurevRepositoryBrowser.class);
             load();
+        }
+
+
+
+        @Override
+        public SCM newInstance(@Nullable StaplerRequest req, @Nonnull JSONObject formData) throws FormException {
+            AccurevSCM scm = (AccurevSCM) super.newInstance(req,formData);
+            scm.repositoryBrowser = RepositoryBrowsers.createInstance(
+                    AccurevRepositoryBrowser.class,
+                    req,
+                    formData,
+                    "browser");
+            return scm;
         }
 
         public String getDisplayName(){

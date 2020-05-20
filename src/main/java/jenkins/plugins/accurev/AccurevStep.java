@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Item;
+import hudson.plugins.accurev.AccurevRepositoryBrowser;
 import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.ServerRemoteConfig;
 import hudson.plugins.accurev.StreamSpec;
@@ -79,7 +80,11 @@ public final class AccurevStep extends SCMStep {
 
     @Override
     public SCM createSCM() {
-        return new AccurevSCM(AccurevSCM.createDepotList(host, port, credentialsId), Collections.singletonList(new StreamSpec(stream, depot)), Collections.<AccurevSCMExtension>emptyList());
+        return new AccurevSCM(
+                AccurevSCM.createDepotList(host, port, credentialsId),
+                Collections.singletonList(new StreamSpec(stream, depot)),
+                Collections.<AccurevSCMExtension>emptyList(),
+                null);
     }
 
     @Override
