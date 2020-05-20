@@ -8,6 +8,7 @@ import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
+import jenkins.plugins.accurevclient.model.AccurevTransactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,13 +30,13 @@ public class DefaultBuildChooser extends BuildChooser {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        Collection<AccurevTransaction> cAT;
         //Only look at changes since current transaction when building Staging Streams.
-        long defaultBuild = 0;
-        Collection<AccurevTransaction> cAT = new ArrayList<AccurevTransaction>();
         if (ac.fetchStream(ss.getDepot(),ss.getName()).getType().equals(AccurevStreamType.Staging)){
-            cAT.add(ac.fetchTransaction(ss.getName()));
-            System.out.println(defaultBuild);
-        }else {
+            AccurevTransactions accurevTransactions = ac.getActiveTransactions(ss.getName());
+            cAT = accurevTransactions.getTransactions();
+        } else {
+            long defaultBuild = 0;
             cAT = ac.getUpdatesFromAncestors(
                     ss.getDepot(),
                     ss.getName(),

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
@@ -72,6 +73,11 @@
             <name>Thomas Elbo</name>
             <email>tmel@widex.com</email>
         </developer>
+        <developer>
+            <id>ehhnwidex</id>
+            <name>Emil Hvid</name>
+            <email>ehhn@widex.com</email>
+        </developer>
     </developers>
     <!-- Assuming you want to host on @jenkinsci:
     <url>https://wiki.jenkins.io/display/JENKINS/TODO+Plugin</url>
@@ -82,10 +88,17 @@
     </scm>
     -->
     <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
+<!--        <repository>-->
+<!--            <id>io.jenkins.plugins.accurev</id>-->
+<!--            <name>GitHub ehhnwidex Apache Maven Packages</name>-->
+<!--            <url>https://maven.pkg.github.com/ehhnwidex/accurev-client-plugin</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--                <checksumPolicy>warn</checksumPolicy>-->
+<!--                <updatePolicy>daily</updatePolicy>-->
+<!--            </snapshots>-->
+<!--            <releases><enabled>true</enabled></releases>-->
+<!--        </repository>-->
         <repository>
             <id>repo.jenkins-ci.org</id>
             <url>https://repo.jenkins-ci.org/public/</url>
@@ -118,9 +131,9 @@
             <version>1.17.1</version>
         </dependency>
         <dependency>
-            <groupId>com.github.ehhnwidex</groupId>
-            <artifactId>accurev-client-plugin</artifactId>
-            <version>7e09982046</version>
+            <groupId>io.jenkins.plugins.accurev</groupId>
+            <artifactId>accurev-client</artifactId>
+            <version>1.0.3</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
