@@ -17,7 +17,7 @@ public class AccurevWebTest extends AbstractBrowserTestBase{
 
     @Test
     public void testGetChangeSetLinkAccurevChangeSet() throws IOException {
-        testGetChangeSetLinkAccurevChangeSet(REPO_URL);
+        testGetChangeSetLinkAccurevChangeSet(REPO_URL +"webgui.jsp?tran_number=405612&depot=dev_testing_staged_stream_12&view=trans_hist");
     }
 
     @Test
@@ -25,8 +25,8 @@ public class AccurevWebTest extends AbstractBrowserTestBase{
         testGetFileLink(REPO_URL + "webgui.jsp/browse/dev_testing_staged_stream_12/src/main/java/hudson/plugins/accurev/AccurevRepositoryBrowser.java?view=content" );
     }
 
-    @Test
-    public void testGetDiffLink() throws IOException {
-        testGetDiffLink(REPO_URL +"webgui.jsp?tran_number=405612&depot=dev_testing_staged_stream_12&view=trans_hist");
-    }
+//    @Test
+//    public void testGetDiffLink() throws IOException {
+//        testGetDiffLink(REPO_URL +"webgui.jsp?tran_number=405612&depot=dev_testing_staged_stream_12&view=trans_hist");
+//    }
 }

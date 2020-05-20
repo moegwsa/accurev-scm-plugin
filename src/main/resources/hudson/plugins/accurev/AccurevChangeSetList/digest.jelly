@@ -9,11 +9,16 @@
             Changes
             <ol>
                 <j:forEach var="cs" items="${it.logs}">
-                   <li> Transaction: ${cs.id}, message: ${cs.msg} (<a href="changes#detail${cs.id}">${%details}</a>)</li>
-                   <j:set var="cslink" value="${browser.getChangeSetLink(cs)}"/>
-                   <j:if test="${cslink!=null}">
-                       <a href="${cslink}">${cs.id}</a>
-                   </j:if>
+                   <li>
+                       <j:out value="${cs.msg}"/>
+                       (<a href="changes#detail${cs.id}">${%details}</a>)
+                       <j:set var="cslink" value="${browser.getChangeSetLink(cs)}"/>
+                       <j:if test="${cslink!=null}">
+                            <j:text> / </j:text>
+                            <a href="${cslink}">${browser.descriptor.displayName}</a>
+                       </j:if>
+                       <j:text>)</j:text>
+                   </li>
                 </j:forEach>
             </ol>
         </j:otherwise>

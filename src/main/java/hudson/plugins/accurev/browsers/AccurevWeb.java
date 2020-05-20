@@ -30,22 +30,26 @@ public class AccurevWeb extends AccurevRepositoryBrowser {
         return DESCRIPTOR;
     }
 
+//    @Override
+//    public URL getDiffLink(String path) throws MalformedURLException {
+//        checkCurrentIsNotNull();
+//        // https://localhost:8080/accurev/WEBGUI.jsp?tran_number=7&depot=test&view=trans_hist
+//        return new URL(getUrl(), "webgui.jsp?tran_number=" +
+//                current.getId() +
+//                "&depot=" +
+//                current.getStream() +
+//                "&view=trans_hist");
+//    }
+
     @Override
-    public URL getDiffLink(String path) throws MalformedURLException {
-        checkCurrentIsNotNull();
+    public URL getChangeSetLink(AccurevChangeSet accurevChangeSet) throws IOException {
         // https://localhost:8080/accurev/WEBGUI.jsp?tran_number=7&depot=test&view=trans_hist
+        current = accurevChangeSet;
         return new URL(getUrl(), "webgui.jsp?tran_number=" +
                 current.getId() +
                 "&depot=" +
                 current.getStream() +
                 "&view=trans_hist");
-    }
-
-    @Override
-    public URL getChangeSetLink(AccurevChangeSet accurevChangeSet) throws IOException {
-        // https://localhost:8080/accurev/WebGui.jsp?view=issue&depot=test&issueNum=59
-        current = accurevChangeSet;
-        return new URL(getUrl(),"");
     }
 
     @Override

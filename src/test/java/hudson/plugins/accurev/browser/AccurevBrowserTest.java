@@ -20,10 +20,10 @@ public class AccurevBrowserTest {
         new MockBrowser("http://abc/").getFileLink("");
     }
 
-    @Test(expected=UnsupportedOperationException.class)
-    public final void testGetDiffLink() throws IOException {
-        new MockBrowser("http://abc/").getDiffLink("");
-    }
+//    @Test(expected=UnsupportedOperationException.class)
+//    public final void testGetDiffLink() throws IOException {
+//        new MockBrowser("http://abc/").getDiffLink("");
+//    }
 
     @Test
     public final void testGetUrl() throws MalformedURLException {

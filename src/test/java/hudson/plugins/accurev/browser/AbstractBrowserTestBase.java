@@ -28,10 +28,10 @@ public abstract class AbstractBrowserTestBase {
         browser.getFileLink("src/main/java/hudson/plugins/accurev/AccurevRepositoryBrowser.java");
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testGetDiffLinkIllegalState() throws IOException {
-        browser.getDiffLink("src/main/java/hudson/plugins/accurev/AccurevRepositoryBrowser.java");
-    }
+//    @Test(expected = IllegalStateException.class)
+//    public void testGetDiffLinkIllegalState() throws IOException {
+//        browser.getDiffLink("src/main/java/hudson/plugins/accurev/AccurevRepositoryBrowser.java");
+//    }
 
     /**
      * @param expected
@@ -46,10 +46,10 @@ public abstract class AbstractBrowserTestBase {
      * @param expected
      * @throws IOException
      */
-    protected void testGetDiffLink(final String expected) throws IOException {
-        browser.getChangeSetLink(changeSet);
-        assertEquals(expected, browser.getDiffLink("src/main/java/hudson/plugins/accurev/AccurevRepositoryBrowser.java").toExternalForm());
-    }
+//    protected void testGetDiffLink(final String expected) throws IOException {
+//        browser.getChangeSetLink(changeSet);
+//        assertEquals(expected, browser.getDiffLink("src/main/java/hudson/plugins/accurev/AccurevRepositoryBrowser.java").toExternalForm());
+//    }
 
     /**
      * @param expected

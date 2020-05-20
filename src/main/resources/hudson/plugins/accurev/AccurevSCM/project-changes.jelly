@@ -43,12 +43,24 @@ THE SOFTWARE.
       <j:set var="hadChanges" value="${false}"/>
         <j:forEach var="b" items="${builds}">
            <j:forEach var="changeSet" items="${b.changeSets}">
+             <j:set var="browser" value="${changeSet.browser}"/>
              <j:set var="hadChanges" value="${true}"/>
              <h2><a href="${b.number}/changes">${b.displayName}
                (<i:formatDate value="${b.timestamp.time}" type="both" dateStyle="medium" timeStyle="medium"/>)</a></h2>
                <ol>
                  <j:forEach var="cs" items="${changeSet.iterator()}">
-                    <li> Transaction: ${cs.id}, message: ${cs.type}</li>
+                    <li>
+                        <j:out value="${cs.id} ${cs.msg}"/>
+                        <j:set var="cslink" value="${browser.getChangeSetLink(cs)}"/>
+                        <j:choose>
+                          <j:when test="${cslink!=null}">
+                            <a href="${cslink}">${browser.descriptor.displayName}</a>
+                          </j:when>
+                          <j:otherwise>
+                            <a href="${b.number}/changes#${cs.id}">${%detail}</a>
+                          </j:otherwise>
+                        </j:choose>
+                    </li>
                   </j:forEach>
                </ol>
              </j:forEach>

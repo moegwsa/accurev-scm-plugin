@@ -1,14 +1,41 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <j:set var="browser" value="${it.browser}"/>
-    <h2>${Summary}</h2>
+    <h2>Summary</h2>
     <ol>
         <j:forEach var="cs" items="${it.logs}">
-            <li> Transaction: ${cs.id}, message: ${cs.type}</li>
-            <j:set var="cslink" value="${browser.getChangeSetLink(cs)}"/>
-            <j:if test="${cslink!=null}">
-                <a href="${cslink}">${cs.id}</a>
-            </j:if>
+            <li><j:out value="#${cs.id} ${cs.msg}"/> </li>
         </j:forEach>
     </ol>
+    <table class="pane" style="border:none">
+        <j:forEach var="cs" items="${it.logs}">
+          <tr class="pane">
+            <td colspan="2" class="changeset">
+                <div class="changeset-message" id="${cs.id}">
+                    <strong>
+                        ${%Transaction}
+                        <j:set var="cslink" value="${browser.getChangeSetLink(cs)}"/>
+                        <j:if test="${cslink!=null}">
+                            <a href="${cslink}">${cs.id}</a>
+                        </j:if>
+                        <j:if test="${cslink==null}">
+                            ${cs.id}
+                        </j:if>
+                        by <a href="${rootURL}/${cs.author.url}/">${cs.author}</a>
+                    </strong>
+                    <j:if test="${cs.stream!=null}">
+                        <j:whitespace trim="false"> in ${cs.stream}</j:whitespace>
+                    </j:if>
+                </div>
+            </td>
+          </tr>
+          <j:forEach var="p" items="${cs.affectedPaths}">
+          <tr>
+            <td>
+              <a href="${browser.getFileLink(p)}">${p}</a>
+            </td>
+          </tr>
+          </j:forEach>
+        </j:forEach>
+    </table>
 </j:jelly>
