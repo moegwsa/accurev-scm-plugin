@@ -29,6 +29,7 @@ import jenkins.plugins.accurevclient.AccurevException;
 import jenkins.plugins.accurevclient.commands.PopulateCommand;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
+import jenkins.plugins.accurevclient.model.AccurevTransactionVersion;
 import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -150,7 +151,7 @@ public class AccurevSCM extends SCM implements Serializable {
     @Override
     public RepositoryBrowser<?> guessBrowser() {
         try {
-            return new AccurevWeb("https://" + getServerRemoteConfigs().get(0).getHost() + ":8080/accurev/");
+            return new AccurevWeb("http://" + getServerRemoteConfigs().get(0).getHost() + ":8080/accurev/");
         } catch (MalformedURLException x) {
             LOGGER.log(Level.FINE, null, x); // OK, could just be a local directory path
             return null;
@@ -348,6 +349,11 @@ public class AccurevSCM extends SCM implements Serializable {
                 out.write("    " + at.getComment() + "    \n");
                 out.write("Type: " + at.getType() + "\n");
                 out.write("User: " + at.getUser() + "\n");
+                if( at.getVersion() != null){
+                    for(AccurevTransactionVersion version : at.getVersion()){
+                        out.write("File: " + version.getPath() + "\n");
+                    }
+                }
                 out.write("Time: " + df.format(at.getTime()) + "\n");
             }
         }catch(InterruptedException e){

@@ -17,7 +17,7 @@ public class AccurevWebTest extends AbstractBrowserTestBase{
 
     @Test
     public void testGetChangeSetLinkAccurevChangeSet() throws IOException {
-        testGetChangeSetLinkAccurevChangeSet(REPO_URL +"webgui.jsp?tran_number=405612&depot=dev_testing_staged_stream_12&view=trans_hist");
+        testGetChangeSetLinkAccurevChangeSet(REPO_URL +"stream/dev_testing_staged_stream_12/405612?view=trans_hist");
     }
 
     @Test
