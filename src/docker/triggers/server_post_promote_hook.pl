@@ -188,12 +188,13 @@ sub main
 	cacheInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
 	
 	system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"".generateCustomIcon("running", "", "Processing transaction $transaction_num")."\"");
+    my $result = 'running';
+    system("$::AccuRev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
     notifyBuild(AccurevUtils->UPDATED, $stream, $depot, $transaction_num);
 
 	# $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
 	
-	my $result = 'running';
-	system("$::AccuRev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
+
     # STEP 9 of 9:
     #   If you would like email notification of changes made
     #   uncomment the following line and make sure email_post_promote.pl (unix)

@@ -17,6 +17,10 @@ use LWP::UserAgent;
 use URI;
 use XML::Simple;
 
+use File::Basename;
+use lib dirname(__FILE__);
+use AccurevUtils;
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw(notifyBuild cacheInputFile);
 
@@ -106,6 +110,11 @@ sub notifyBuild {
 		});
 		if(!messageSucceeded($response->status_line)) {
 			print "cannot notify build because: ".$response->code." ".$response->message."\n";
+			# Change the icon to the result
+			my $result = "warning";
+			system("accurev setproperty -r -s \"$stream\" streamCustomIcon \"" . generateCustomIcon($result, "", "cannot contact server") . "\"");
+			# Report the result (this must be the last accurev command before exiting the trigger)
+			system("accurev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
 		}
 	}
 }
