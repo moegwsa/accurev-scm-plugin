@@ -13,6 +13,7 @@ use File::Log;
 
 use lib dirname(__FILE__);
 use AccurevUtils;
+use Capture::Tiny "capture";
 
 sub main {
     use Fcntl ':flock';
@@ -90,21 +91,26 @@ sub mqttListener {
 
                     # Promote the changes
                     $log->msg(2,"stream is: $staging_stream and transaction number is $transaction_num");
-                    my $principalAndComment = getPrincipalAndComment($staging_stream, $transaction_num);
+                    my ($principalAndComment, $issue) = getPrincipalAndComment($staging_stream, $transaction_num);
                     $log->msg(2, "principalAndComment is: " . $principalAndComment . "\n");
                     my $promote_result;
                     if (not looks_like_number($principalAndComment)) {
                         $log->msg(2, "promoting $principalAndComment to $staging_stream");
-                        $promote_result = system("accurev promote -s \"$staging_stream\" -d -t $transaction_num -c \"$principalAndComment\"");
-                    }
-
-                    # If promote failed, possibly became overlapped during external action
-                    if ($promote_result) {
-                        $result = 'warning';
-                        $tooltip = "Unable to promote transaction $transaction_num";
+                        my ($out, $err, $ext) = capture {
+                            if($issue != 0){
+                                $promote_result = system("accurev promote -s \"$staging_stream\" -d -t $transaction_num -c \"$principalAndComment\" -I $issue");
+                            } else {
+                                $promote_result = system("accurev promote -s \"$staging_stream\" -d -t $transaction_num -c \"$principalAndComment\"");
+                            }
+                        };
+                        # If promote failed, possibly became overlapped during external action
+                        if ($promote_result) {
+                            $result = 'warning';
+                            $err=~s/[\x00-\x1F]+/./g;
+                            $tooltip = "Unable to promote transaction $transaction_num, due to $err";
+                        }
                     }
                 }
-
                 $log->msg(2, "Result: $result\n");
                 # Change the icon to the result
                 system("accurev setproperty -r -s \"$staging_stream\" streamCustomIcon \"" . generateCustomIcon($result, $url, $tooltip) . "\"");
@@ -189,8 +195,10 @@ sub getPrincipalAndComment {
 
         my $principal = $$xmlinput{'principal'}[0];
         my $comment = $$xmlinput{'comment'}[0];
+        my $issue = $$xmlinput{'changePackageID'}[0];
+        $comment=~s/[\x00-\x1F]+/./g;
 
-        return $principal . ": " . $comment;
+        return $principal . ": " . $comment, $issue;
     }
     return -1;
 }

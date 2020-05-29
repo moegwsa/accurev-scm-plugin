@@ -66,7 +66,7 @@ sub notifyBuild {
 	my $userAgent = LWP::UserAgent->new;
 	# Set timeout for post calls to 10 seconds.
 	$userAgent->timeout(10);
-	if(not looks_like_number($crumb)){
+	if(length $crumb){
 		print "adding crumb to header. \n";
 		$userAgent->default_header($crumbRequestField => $crumb);
 	}
@@ -92,8 +92,8 @@ sub notifyBuild {
 		my ($crumbUpdated, $crumbRequestFieldUpdated) = updateCrumb($url);
 		updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 		print "Trying to trigger stream again. \n";
-		if(not looks_like_number($crumb)){
-			print "adding crumb to header. \n";
+		if(length $crumbUpdated){
+			print "adding newly obtained crumb to header. \n";
 			$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
 		}
 		$response = $userAgent->post($urlToJenkins, {
