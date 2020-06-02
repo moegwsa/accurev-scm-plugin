@@ -43,13 +43,13 @@ public class AccurevWeb extends AccurevRepositoryBrowser {
 
     @Override
     public URL getChangeSetLink(AccurevChangeSet accurevChangeSet) throws IOException {
-        // https://localhost:8080/accurev/WEBGUI.jsp?tran_number=7&depot=test&view=trans_hist
+        // https://localhost:8080/accurev/stream/test/7?view=trans_hist
         current = accurevChangeSet;
-        return new URL(getUrl(), "webgui.jsp?tran_number=" +
-                current.getId() +
-                "&depot=" +
+        return new URL(getUrl(), "stream/" +
                 current.getStream() +
-                "&view=trans_hist");
+                "/" +
+                current.getId() +
+                "?view=trans_hist");
     }
 
     @Override

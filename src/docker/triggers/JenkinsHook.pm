@@ -17,6 +17,10 @@ use LWP::UserAgent;
 use URI;
 use XML::Simple;
 
+use File::Basename;
+use lib dirname(__FILE__);
+use AccurevUtils;
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw(notifyBuild cacheInputFile);
 
@@ -66,7 +70,7 @@ sub notifyBuild {
 	my $userAgent = LWP::UserAgent->new;
 	# Set timeout for post calls to 10 seconds.
 	$userAgent->timeout(10);
-	if(not looks_like_number($crumb)){
+	if(length $crumb){
 		print "adding crumb to header. \n";
 		$userAgent->default_header($crumbRequestField => $crumb);
 	}
@@ -92,8 +96,8 @@ sub notifyBuild {
 		my ($crumbUpdated, $crumbRequestFieldUpdated) = updateCrumb($url);
 		updateJenkinsConfigFile($jenkinsConfigFile, $crumbUpdated, $crumbRequestFieldUpdated);
 		print "Trying to trigger stream again. \n";
-		if(not looks_like_number($crumb)){
-			print "adding crumb to header. \n";
+		if(length $crumbUpdated){
+			print "adding newly obtained crumb to header. \n";
 			$userAgent->default_headers->header($crumbRequestFieldUpdated => $crumbUpdated);
 		}
 		$response = $userAgent->post($urlToJenkins, {
@@ -106,6 +110,11 @@ sub notifyBuild {
 		});
 		if(!messageSucceeded($response->status_line)) {
 			print "cannot notify build because: ".$response->code." ".$response->message."\n";
+			# Change the icon to the result
+			my $result = "warning";
+			system("accurev setproperty -r -s \"$stream\" streamCustomIcon \"" . generateCustomIcon($result, "", "cannot contact server") . "\"");
+			# Report the result (this must be the last accurev command before exiting the trigger)
+			system("accurev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
 		}
 	}
 }
