@@ -185,13 +185,14 @@ sub main
     #
     # Windows:
     # system("$::AccuRevBin\\server_ot_promote", $file, $file2);
-	cacheInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
-	
-	system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"".generateCustomIcon("running", "", "Processing transaction $transaction_num")."\"");
-    my $result = 'running';
-    system("$::AccuRev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
-    notifyBuild(AccurevUtils->UPDATED, $stream, $depot, $transaction_num);
+    if(hookIsEnabled($stream)) {
+        cacheInputFile($file2, $stream, $transaction_num, $principal); # cacheInputFile
 
+        system("$::AccuRev setproperty -r -s \"$stream\" streamCustomIcon \"" . generateCustomIcon("running", "", "Processing transaction $transaction_num") . "\"");
+        my $result = 'running';
+        system("$::AccuRev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
+        notifyBuild(AccurevUtils->UPDATED, $stream, $depot, $transaction_num);
+    }
 	# $::AccuRev = "C:\\progra~1\\accurev\\bin\\accurev.exe";
 	
 
