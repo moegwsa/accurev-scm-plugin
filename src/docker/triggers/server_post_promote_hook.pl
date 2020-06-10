@@ -208,7 +208,7 @@ sub main
     # Windows:
     # system("$::AccuRevBin\\email_post_promote", $file, $file2);
 
-    # we're done, clean out the input file.
+    # we're done, clean out the input file.g
     open TIO, ">$file" or die "Can't open $file";
     close TIO;
     close STDERR;
