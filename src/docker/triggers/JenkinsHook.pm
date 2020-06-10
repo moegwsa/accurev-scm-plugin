@@ -112,7 +112,7 @@ sub notifyBuild {
 			print "cannot notify build because: ".$response->code." ".$response->message."\n";
 			# Change the icon to the result
 			my $result = "warning";
-			system("accurev setproperty -r -s \"$stream\" streamCustomIcon \"" . generateCustomIcon($result, "", "cannot contact server") . "\"");
+			system("accurev setproperty -r -s \"$stream\" streamCustomIcon \"" . generateCustomIcon($result, "", "cannot contact jenkins server: $urlToJenkins") . "\"");
 			# Report the result (this must be the last accurev command before exiting the trigger)
 			system("accurev setproperty -r -s \"$stream\" stagingStreamResult \"$result\"");
 		}

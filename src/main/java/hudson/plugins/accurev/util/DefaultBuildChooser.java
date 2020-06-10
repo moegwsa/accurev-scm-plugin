@@ -10,7 +10,9 @@ import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import jenkins.plugins.accurevclient.model.AccurevTransactions;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 
 public class DefaultBuildChooser extends BuildChooser {
@@ -32,16 +34,19 @@ public class DefaultBuildChooser extends BuildChooser {
         }
         Collection<AccurevTransaction> cAT;
         //Only look at changes since current transaction when building Staging Streams.
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Calculate Accurev candidate transactions");
         if (ac.fetchStream(ss.getDepot(),ss.getName()).getType().equals(AccurevStreamType.Staging)){
             AccurevTransactions accurevTransactions = ac.getActiveTransactions(ss.getName());
             cAT = accurevTransactions.getTransactions();
         } else {
             long defaultBuild = 0;
+            listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Fetch updates from ancestors");
             cAT = ac.getUpdatesFromAncestors(
                     ss.getDepot(),
                     ss.getName(),
                     (data.lastBuild != null ? data.lastBuild.transaction.getId() : defaultBuild) // Compare to the Transaction ID of the last build we began.
             );
+            listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Ancestors updated");
         }
         if(!cAT.isEmpty()) listener.getLogger().println("New updates:");
         else listener.getLogger().println("No changes found");// TODO What if no changes happens, no new updates
@@ -49,7 +54,7 @@ public class DefaultBuildChooser extends BuildChooser {
         for(AccurevTransaction as : cAT){
             listener.getLogger().println("> Transaction id: " + as.getId() + ", comment: " + as.getComment() + ", user: " + as.getUser() + ", time: " + as.getTime());
         }
-
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " return changelog");
         return cAT;
     }
 

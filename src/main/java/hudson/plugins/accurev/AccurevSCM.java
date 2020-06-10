@@ -263,7 +263,7 @@ public class AccurevSCM extends SCM implements Serializable {
     @Override
     public void checkout(Run<?, ?> build, Launcher launcher, FilePath workspace, TaskListener listener, File changelogFile, SCMRevisionState baseline)
             throws IOException, InterruptedException {
-        listener.getLogger().println("Checkout started");
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "Checkout started");
         listener.getLogger().println("Building stream:" + getStreams().get(0).getName());
         BuildData prevBuildData = getBuildData(build.getPreviousBuild());
         BuildData buildData = copyBuildData(build.getPreviousBuild());
@@ -274,9 +274,11 @@ public class AccurevSCM extends SCM implements Serializable {
         EnvVars environment = build.getEnvironment(listener);
         createClient(listener, environment, build, workspace, launcher);
 
-
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "client created");
         retrieveChanges(build, ac, listener);
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "changes revieved");
         Build transactionToBuild = determineTransactionToBuild(build, buildData, environment, ac, listener);
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "determined transaction to build");
         List<BuildData> actions = build.getActions(BuildData.class);
 
         if(!actions.isEmpty()){
@@ -287,6 +289,7 @@ public class AccurevSCM extends SCM implements Serializable {
         Set files = new HashSet();
         files.add(".");
         ac.update();
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "before populate");
         PopulateCommand populateCommand = ac.populate();
 
         boolean requiresWorkspace = false;
@@ -307,7 +310,7 @@ public class AccurevSCM extends SCM implements Serializable {
         }
 
         populateCommand.execute();
-        listener.getLogger().println("Checkout done");
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "Checkout done");
         if (changelogFile != null) {
             computeChangeLog(ac, listener, transactionToBuild, prevBuildData, buildData, new FilePath(changelogFile));
         }
@@ -315,7 +318,6 @@ public class AccurevSCM extends SCM implements Serializable {
 
     @Override
     public void buildEnvVars(AbstractBuild<?, ?> build, Map<String, String> env) {
-        //LOGGER.log(Level.WARNING, "deprecated call to to Run.getEnvVars");
         buildEnvironment(build, env);
     }
 
@@ -330,10 +332,6 @@ public class AccurevSCM extends SCM implements Serializable {
                 env.put(ACCUREV_SERVER, config.getHost());
                 env.put(ACCUREV_PORT, config.getPort());
             }
-
-//            if (build instanceof AbstractBuild) {
-//                buildEnvVars((AbstractBuild) build, env );
-//            }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "failed to load environment" + e.getMessage());
         }
@@ -371,6 +369,7 @@ public class AccurevSCM extends SCM implements Serializable {
         *
         */
         Collection<AccurevTransaction> candidates = Collections.emptyList();
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Before calculate candidates");
 
         if(candidates.isEmpty()){
             final String singleStream = environment.expand( getSingleStream() );
@@ -378,6 +377,7 @@ public class AccurevSCM extends SCM implements Serializable {
             candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
             listener.getLogger().println(candidates.isEmpty());
         }
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Candidates found");
 
         Build transToBuild;
         if(!candidates.isEmpty()) {
@@ -391,6 +391,8 @@ public class AccurevSCM extends SCM implements Serializable {
             transToBuild = new Build(stream, markedTransaction,  candidates, build.getNumber(), null);
             buildData.saveBuild(transToBuild);
         }
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Lastbuild builddata saved");
+
 
         /**
          *
@@ -398,12 +400,14 @@ public class AccurevSCM extends SCM implements Serializable {
          * Depending on level, get n-level children.
          *
          */
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Determine affected streams");
+
         Collection<AccurevStream> affectedStreams = newArrayList();
         for (AccurevSCMExtension ext : extensions) {
             Collection<AccurevStream> affected = ext.getAffectedToBuild(this, transToBuild, ac);
+            listener.getLogger().println("there are " + affected.size() + " affected streams");
             if(!affected.isEmpty()) affectedStreams.addAll(affected);
         }
-
         if(!affectedStreams.isEmpty()) {
             ItemGroup folder = build.getParent().getParent();
             if (folder instanceof WorkflowMultiBranchProject) {
@@ -431,7 +435,7 @@ public class AccurevSCM extends SCM implements Serializable {
                 });
             }
         }
-
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Determine affected streams done");
         return transToBuild;
 
     }

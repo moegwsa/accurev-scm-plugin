@@ -18,10 +18,19 @@ import java.util.Map;
 
 public class AccurevSCMHeadEvent<T> extends SCMHeadEvent<AccurevCommitPayload> {
     private final AccurevCommitPayload payload;
+    private final Type type;
+
 
     public AccurevSCMHeadEvent(Type type, AccurevCommitPayload payload, String origin) {
         super(type, payload, origin);
         this.payload = payload;
+        this.type = type;
+    }
+
+    @NonNull
+    @Override
+    public AccurevCommitPayload getPayload() {
+        return payload;
     }
 
     @Override
