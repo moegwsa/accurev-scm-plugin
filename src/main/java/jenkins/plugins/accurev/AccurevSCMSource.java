@@ -27,6 +27,7 @@ import jenkins.plugins.accurev.traits.AccurevBrowserSCMSourceTrait;
 import jenkins.plugins.accurev.traits.BuildItemsDiscoveryTrait;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
+import jenkins.plugins.accurevclient.AccurevException;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevStreams;
@@ -56,6 +57,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class AccurevSCMSource extends SCMSource {
 
@@ -122,8 +125,8 @@ public class AccurevSCMSource extends SCMSource {
                             @NonNull TaskListener taskListener)
                             throws IOException, InterruptedException {
         this.listener = taskListener;
-
         taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Retrieving from Accurev");
+
 
         listener.getLogger().println("retrieve with filtering");
         System.out.println("retrieve with filtering");
@@ -136,57 +139,44 @@ public class AccurevSCMSource extends SCMSource {
             taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime())
                     + "Triggered by event: " + scmHeadEvent.getType());
         }
+
+        Collection<AccurevStream> streams = Collections.emptyList();
+
+        Node instance = Jenkins.getInstanceOrNull();
+        Launcher launcher;
+        if (instance != null) {
+            launcher = instance.createLauncher(taskListener);
+        } else {
+            launcher = new Launcher.LocalLauncher(taskListener);
+        }
+        Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
+        accurevClient = accurev.getClient();
+        accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+
         AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(scmSourceCriteria, scmHeadObserver).withTraits(getTraits());
         try (AccurevSCMSourceRequest request = context.newRequest(this, taskListener)) {
+            List<Boolean> present = new ArrayList<>(Arrays.asList(
+                    context.isWantStreams(),
+                    context.isWantSnapshots(),
+                    context.isWantWorkspaces(),
+                    context.isWantPassThroughs(),
+                    context.iswantGatedStreams(),
+                    true));
 
-            Node instance = Jenkins.getInstanceOrNull();
-            Launcher launcher;
-            if (instance != null) {
-                launcher = instance.createLauncher(taskListener);
-            } else {
-                launcher = new Launcher.LocalLauncher(taskListener);
-            }
-            Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
-            accurevClient = accurev.getClient();
-            accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+            Collection<AccurevStreamType> wantedTypes = IntStream.range(0, present.size()).filter(present::get).mapToObj(i -> AccurevStreamType.values()[i]).
+                    collect(Collectors.toCollection(() -> EnumSet.noneOf(AccurevStreamType.class)));
 
-            AccurevStreams streams;
             taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Client logged in");
-            if (context.getTopStream().isEmpty()) {
-                streams = accurevClient.getStreams(depot);
-            } else {
-                streams = accurevClient.getChildStreams(depot, context.getTopStream());
-            }
 
             taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " start filtering streams");
-            for (AccurevStream stream : streams.getList()) {
-                //System.out.println("Processing object: " + stream.getName());
-                if (!context.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
-                    //System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
-                    continue;
-                }
-                if (!context.isWantWorkspaces() && stream.getType().equals(AccurevStreamType.Workspace)) {
-                    //System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build workspaces");
-                    continue;
-                }
-                if (!context.isWantSnapshots() && stream.getType().equals(AccurevStreamType.Snapshot)) {
-                    //System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build snapshots");
-                    continue;
-                }
-                if (!context.isWantPassThroughs() && stream.getType().equals(AccurevStreamType.PassThrough)) {
-                    //System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build pass through types");
-                    continue;
-                }
-                if (!context.iswantGatedStreams() && stream.getType().equals(AccurevStreamType.Staging)) {
-                    //System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build staging streams");
-                    continue;
-                }
-                if (stream.getType().equals(AccurevStreamType.Gated)) {
-                    //System.out.println("Discarding object: " + stream.getName() + ". Reason: Don't want to build gated streams");
-                    continue;
-                }
+            if (context.getTopStream().isEmpty()) {
+                streams = accurevClient.fetchStreams(depot, wantedTypes);
+            } else {
+                streams = accurevClient.fetchChildStreams(depot, context.getTopStream(), wantedTypes);
+            }
+
+            for (AccurevStream stream : streams) {
                 if (stream.getType().equals(AccurevStreamType.Staging) && accurevClient.getActiveElements(stream.getName()).getFiles().size() == 0) {
-                    //System.out.println("Discarded object: " + stream.getName() + "Because default group is empty");
                     continue;
                 }
                 AccurevTransaction highest = accurevClient.fetchTransaction(stream.getName());
@@ -194,6 +184,7 @@ public class AccurevSCMSource extends SCMSource {
 
                 SCMRevisionImpl revision = new SCMRevisionImpl(head, highest.getId());
                 AccurevSCMHead accurevHead = new AccurevSCMHead(revision.getHead().getName());
+
 
                 if (request.process(
                         accurevHead,
@@ -206,7 +197,13 @@ public class AccurevSCMSource extends SCMSource {
                                 taskListener.getLogger().println("    Does not meet criteria");
                             }
                         })
-                ) ;
+                );
+
+                scmHeadObserver.observe(accurevHead,revision);
+                if(!scmHeadObserver.isObserving()){
+                    return;
+                }
+
             }
             taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " filtering is done");
         }
@@ -291,6 +288,7 @@ public class AccurevSCMSource extends SCMSource {
 
             AccurevTransaction highest = accurevClient.fetchTransaction(head.getName());
             AccurevSCMHead accurevHead = (AccurevSCMHead) head;
+
 
             return new AccurevSCMRevision(accurevHead, highest.getId());
         }
@@ -397,6 +395,13 @@ public class AccurevSCMSource extends SCMSource {
 
     public TaskListener getListener() {
         return listener;
+    }
+
+    private void fetch(@NonNull TaskListener listener,
+                       @CheckForNull SCMSourceCriteria criteria,
+                       @NonNull SCMHeadObserver observer,
+                       @NonNull AccurevClient client) throws IOException, AccurevException, InterruptedException {
+
     }
 
     @Symbol("accurev")

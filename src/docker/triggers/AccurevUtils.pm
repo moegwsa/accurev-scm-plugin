@@ -52,7 +52,10 @@ sub hookIsEnabled{
 
    while(my $String = <FH>)
    {
-      if($filter =~ /$String/)
+      if($String =~ /^#/){
+         next;
+      }
+      elsif($filter =~ /$String/)
       {
          $found = 1;
       }

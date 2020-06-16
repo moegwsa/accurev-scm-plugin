@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -54,13 +55,16 @@ import static org.junit.Assume.assumeTrue;
 
 public class IntegrationTest {
 
+
+    @Rule public TestName name = new TestName();
+
     @Rule
     public JenkinsRule rule = new JenkinsRule();
 
     @Rule
     public DockerComposeRule docker = DockerComposeRule.builder()
             .file("src/docker/docker-compose.yml")
-            .saveLogsTo("src/docker/logs")
+            .saveLogsTo("src/docker/logs-" + name.getMethodName())
             .build();
 
     String host = "localhost";
@@ -362,7 +366,7 @@ public class IntegrationTest {
 
         // Discover Staging streams
         AccurevSCMSource accurevSCMSource = new AccurevSCMSource(null, "localhost", "5050", depot, "1");
-        accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,true)));
+        accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,false)));
 
         // Find builds
         multiProject.getSourcesList().add(new BranchSource(accurevSCMSource, new DefaultBranchPropertyStrategy(new BranchProperty[0])));

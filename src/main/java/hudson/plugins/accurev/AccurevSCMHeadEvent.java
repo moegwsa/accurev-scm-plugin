@@ -1,17 +1,18 @@
 package hudson.plugins.accurev;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.model.Job;
 import hudson.scm.SCM;
 import jenkins.plugins.accurev.AccurevSCMHead;
 import jenkins.plugins.accurev.AccurevSCMSource;
-import jenkins.scm.api.SCMHead;
-import jenkins.scm.api.SCMHeadEvent;
-import jenkins.scm.api.SCMNavigator;
-import jenkins.scm.api.SCMRevision;
-import jenkins.scm.api.SCMSource;
+import jenkins.plugins.accurev.AccurevSCMSourceContext;
+import jenkins.plugins.accurev.traits.TopStreamDiscoveryTrait;
+import jenkins.scm.api.*;
+import jenkins.scm.api.trait.SCMSourceTrait;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +39,12 @@ public class AccurevSCMHeadEvent<T> extends SCMHeadEvent<AccurevCommitPayload> {
         return false;
     }
 
+
+
     @NonNull
     @Override
     public String getSourceName() {
-        return "";
+        return payload.getStream();
     }
 
     @NonNull
@@ -53,9 +56,17 @@ public class AccurevSCMHeadEvent<T> extends SCMHeadEvent<AccurevCommitPayload> {
             if (remote != null) {
                 try {
                     if (AccurevStatus.looselyMatches(new URI(remote), payload.getUrl())) {
-                        AccurevSCMHead head = new AccurevSCMHead(payload.getStream());
-                        AccurevSCMRevision revision = new AccurevSCMRevision(head, Long.parseLong(payload.getTransaction()));
-                        return Collections.<SCMHead, SCMRevision>singletonMap(head, revision);
+                        if(accurevSCMSource.getOwner() != null && type.equals(Type.UPDATED)) {
+                            if (AccurevStatus.looselyMatches(accurevSCMSource.getOwner().getAllJobs(), payload.getStream())) {
+                                AccurevSCMHead head = new AccurevSCMHead(payload.getStream());
+                                AccurevSCMRevision revision = new AccurevSCMRevision(head, Long.parseLong(payload.getTransaction()));
+                                return Collections.<SCMHead, SCMRevision>singletonMap(head, revision);
+                            }
+                        } else {
+                            AccurevSCMHead head = new AccurevSCMHead(payload.getStream());
+                            AccurevSCMRevision revision = new AccurevSCMRevision(head, Long.parseLong(payload.getTransaction()));
+                            return Collections.<SCMHead, SCMRevision>singletonMap(head, revision);
+                        }
                     }
                 } catch (URISyntaxException e) {
                     e.printStackTrace();

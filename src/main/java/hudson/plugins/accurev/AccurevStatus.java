@@ -1,14 +1,16 @@
 package hudson.plugins.accurev;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.ExtensionPoint;
 import hudson.Util;
-import hudson.model.Cause;
-import hudson.model.Item;
-import hudson.model.UnprotectedRootAction;
+import hudson.model.*;
+import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMEvent;
 import jenkins.scm.api.SCMHeadEvent;
 import org.apache.commons.lang.StringUtils;
+
 import org.kohsuke.stapler.*;
 
 import javax.annotation.CheckForNull;
@@ -20,6 +22,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,6 +40,7 @@ public class AccurevStatus implements UnprotectedRootAction {
     private String lastTransaction = null;
     private String lastPrincipal = null;
     private Reason lastReason = null;
+
 
     @CheckForNull
     @Override
@@ -109,6 +113,7 @@ public class AccurevStatus implements UnprotectedRootAction {
             streamsArray = streams.split(",");
         }
         String origin = SCMEvent.originOf(request);
+
         if (streamsArray.length > 0) {
             for (String stream : streamsArray) {
                 switch (lastReason != null ? lastReason : Reason.NONE ) {
@@ -147,6 +152,7 @@ public class AccurevStatus implements UnprotectedRootAction {
             staplerResponse.addHeader("Success", "Test Message");
         };
     }
+
 
     public static abstract class Listener implements ExtensionPoint {
         public  List<ResponseContributor> onNotifyCommit(String origin,
@@ -252,10 +258,20 @@ public class AccurevStatus implements UnprotectedRootAction {
 
     }
 
+
     public static boolean looselyMatches(URI lhs, URI rhs) {
         return StringUtils.equals(lhs.getHost(),rhs.getHost())
                 && StringUtils.equals(lhs.getPath(), rhs.getPath());
     }
+
+    public static boolean looselyMatches(@CheckForNull Collection<? extends Job> lhs, String rhs) {
+        return lhs.stream().anyMatch(x -> x.getName().equals(rhs));
+    }
+
+    static private boolean isUnexpandedEnvVar(String str) {
+        return str.startsWith("$");
+    }
+
 
     public static class ResponseContributor {
         /**
