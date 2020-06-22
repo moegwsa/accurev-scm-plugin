@@ -9,6 +9,7 @@ import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
 import hudson.model.FreeStyleProject;
+import hudson.model.Job;
 import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.StreamSpec;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
@@ -43,10 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 
 import static org.junit.Assert.assertEquals;
@@ -373,6 +371,7 @@ public class IntegrationTest {
         multiProject.scheduleBuild2(0).getFuture().get();
 
         rule.waitUntilNoActivity();
+
         // should be transaction 4.
         assertTrue(getBrokerLog().contains("Transaction built: 4"));
 
@@ -450,8 +449,8 @@ public class IntegrationTest {
         client.workspace().create(workspace1, depot).execute();
         List<String> files = new ArrayList<>();
         files.add(jenkinsFile.getAbsolutePath());
-        client.add().add(files).comment("test").execute();
-        client.promote().files(files).comment("test").execute();
+        client.add().add(files).comment("test").execute(); //Transaction 3
+        client.promote().files(files).comment("test").execute(); //Transaction 4
 
         //Attach trigger
         attachPromoteTrigger(depot);
@@ -467,18 +466,28 @@ public class IntegrationTest {
         rule.waitUntilNoActivity();
         Thread.sleep(20000);
 
+
+
+        // Only expect multibranch scan to find one job
+        assertEquals(1, multiProject.getAllJobs().iterator().next().getBuilds().size());
+
         assertTrue(getBrokerLog().contains("Transaction built: 4"));
 
         // Promote new file, should trigger an update
         File file = AccurevTestExtensions.createFile(multiProject.getComputationDir().getPath(), "File",  "initial file");
         files = new ArrayList<>();
         files.add(file.getAbsolutePath());
-        client.add().add(files).comment("test new file").execute();
-        client.promote().files(files).comment("test new file").execute();
+        client.add().add(files).comment("test new file").execute(); //Transaction 5
+        client.promote().files(files).comment("test new file").execute(); //Transaction 6
 
         Thread.sleep(20000);
         rule.waitUntilNoActivity();
         assertTrue(getBrokerLog().contains("Transaction built: 6"));
+
+
+        // Triggered build should be build two
+        assertEquals(2, multiProject.getAllJobs().iterator().next().getBuilds().size());
+
     }
 
     private void sendMQTTMessage(String topic, String content) throws UnsupportedEncodingException {

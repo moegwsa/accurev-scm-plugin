@@ -1,1 +1,2 @@
+# List of streams where webhooks are enabled. Use ^ to enable hooks in all streams
 ^

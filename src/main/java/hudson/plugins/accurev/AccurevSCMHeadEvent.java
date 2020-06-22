@@ -58,13 +58,19 @@ public class AccurevSCMHeadEvent<T> extends SCMHeadEvent<AccurevCommitPayload> {
                     if (AccurevStatus.looselyMatches(new URI(remote), payload.getUrl())) {
                         if(accurevSCMSource.getOwner() != null && type.equals(Type.UPDATED)) {
                             if (AccurevStatus.looselyMatches(accurevSCMSource.getOwner().getAllJobs(), payload.getStream())) {
+                                System.out.println("Sending a head event to start building with updated for stream: " + payload.getStream());
                                 AccurevSCMHead head = new AccurevSCMHead(payload.getStream());
                                 AccurevSCMRevision revision = new AccurevSCMRevision(head, Long.parseLong(payload.getTransaction()));
+                                head.setHash(Long.parseLong(payload.getTransaction()));
                                 return Collections.<SCMHead, SCMRevision>singletonMap(head, revision);
                             }
-                        } else {
+                        }
+                        else if (type.equals(Type.CREATED)) {
+                            System.out.println("Sending a head event to start building in else block for stream " + payload.getStream());
                             AccurevSCMHead head = new AccurevSCMHead(payload.getStream());
                             AccurevSCMRevision revision = new AccurevSCMRevision(head, Long.parseLong(payload.getTransaction()));
+                            head.setHash(Long.parseLong(payload.getTransaction()));
+
                             return Collections.<SCMHead, SCMRevision>singletonMap(head, revision);
                         }
                     }

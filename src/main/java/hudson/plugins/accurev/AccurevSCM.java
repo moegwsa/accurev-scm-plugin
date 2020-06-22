@@ -23,6 +23,7 @@ import hudson.plugins.accurev.util.Build;
 import hudson.scm.*;
 import hudson.security.ACL;
 import hudson.util.DescribableList;
+import jenkins.plugins.accurev.AccurevSCMHead;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.AccurevException;
@@ -30,6 +31,7 @@ import jenkins.plugins.accurevclient.commands.PopulateCommand;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import jenkins.plugins.accurevclient.model.AccurevTransactionVersion;
+import jenkins.scm.api.SCMRevisionAction;
 import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -86,6 +88,8 @@ public class AccurevSCM extends SCM implements Serializable {
         streams = Collections.singletonList(new StreamSpec(""));
         this.extensions = new DescribableList<>(Saveable.NOOP, Util.fixNull(extensions));
     }
+
+
 
     @Override
     public boolean supportsPolling() {
@@ -163,7 +167,6 @@ public class AccurevSCM extends SCM implements Serializable {
     public PollingResult compareRemoteRevisionWith(Job<?, ?> project, Launcher launcher, FilePath workspace, final @NonNull TaskListener listener, @NotNull SCMRevisionState baseline) throws IOException, InterruptedException {
         // Poll for changes. Are there any unbuilt revisions that Hudson ought to build ?
         listener.getLogger().println("Using strategy: " + getBuildChooser().getDisplayName());
-
         final Run lastBuild = project.getLastBuild();
         if (lastBuild == null) {
             // If we've never been built before, well, gotta build!
@@ -260,25 +263,23 @@ public class AccurevSCM extends SCM implements Serializable {
         return Collections.unmodifiableList(serverRemoteConfigs);}
 
 
+
     @Override
     public void checkout(Run<?, ?> build, Launcher launcher, FilePath workspace, TaskListener listener, File changelogFile, SCMRevisionState baseline)
             throws IOException, InterruptedException {
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "Checkout started");
-        listener.getLogger().println("Building stream:" + getStreams().get(0).getName());
+
         BuildData prevBuildData = getBuildData(build.getPreviousBuild());
         BuildData buildData = copyBuildData(build.getPreviousBuild());
-        BuildData buildData1 = getBuildData(build);
+        System.out.println("Checkout started");
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "Checkout started");
         if (VERBOSE && buildData.lastBuild != null) {
             listener.getLogger().println("Last Built TransactionId: " + buildData.lastBuild.transaction);
         }
         EnvVars environment = build.getEnvironment(listener);
         createClient(listener, environment, build, workspace, launcher);
 
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "client created");
         retrieveChanges(build, ac, listener);
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "changes revieved");
         Build transactionToBuild = determineTransactionToBuild(build, buildData, environment, ac, listener);
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "determined transaction to build");
         List<BuildData> actions = build.getActions(BuildData.class);
 
         if(!actions.isEmpty()){
@@ -370,6 +371,16 @@ public class AccurevSCM extends SCM implements Serializable {
         */
         Collection<AccurevTransaction> candidates = Collections.emptyList();
         listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Before calculate candidates");
+
+        final SCMRevisionAction sra = build.getAction(SCMRevisionAction.class);
+        if(candidates.isEmpty()) {
+            if (sra != null) {
+                AccurevSCMHead head = (AccurevSCMHead) sra.getRevision().getHead();
+                System.out.println("calculation revison for: " + head.getName() + " at transaction: " + head.getTransaction().getId());
+                candidates = getBuildChooser().getCandidateTransactions(false, getSingleStream(), ac , listener, buildData, head.getTransaction());
+            }
+        }
+
 
         if(candidates.isEmpty()){
             final String singleStream = environment.expand( getSingleStream() );

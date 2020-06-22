@@ -1,35 +1,25 @@
 package hudson.plugins.accurev;
 
+import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
-import hudson.triggers.SCMTrigger;
-import jenkins.plugins.accurevclient.Accurev;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.WithoutJenkins;
 import org.kohsuke.stapler.HttpResponse;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
-import org.mockito.Matchers;
-import org.mockito.MockingDetails;
 import org.mockito.Mockito;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-
 
 public class AccurevStatusTest {
 
@@ -115,6 +105,7 @@ public class AccurevStatusTest {
 
         assertEquals("HOST: host PORT: 8080 Streams: stream1,stream2", spy.toString());
     }
+
 
     private AccurevTrigger setupProjectWithTrigger(String host, String port, String streamString, String depotString, boolean ignoreNotifyCommit) throws Exception {
         AccurevTrigger trigger = Mockito.mock(AccurevTrigger.class);
