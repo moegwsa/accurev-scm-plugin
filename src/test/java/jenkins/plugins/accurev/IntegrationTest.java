@@ -9,6 +9,7 @@ import com.palantir.docker.compose.DockerComposeRule;
 import com.palantir.docker.compose.execution.DockerComposeExecArgument;
 import com.palantir.docker.compose.execution.DockerComposeExecOption;
 import hudson.model.FreeStyleProject;
+import hudson.model.Job;
 import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.StreamSpec;
 import hudson.plugins.accurev.util.AccurevTestExtensions;
@@ -31,6 +32,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -42,10 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 
 import static org.junit.Assert.assertEquals;
@@ -54,13 +53,16 @@ import static org.junit.Assume.assumeTrue;
 
 public class IntegrationTest {
 
+
+    @Rule public TestName name = new TestName();
+
     @Rule
     public JenkinsRule rule = new JenkinsRule();
 
     @Rule
     public DockerComposeRule docker = DockerComposeRule.builder()
             .file("src/docker/docker-compose.yml")
-            .saveLogsTo("src/docker/logs")
+            .saveLogsTo("src/docker/logs-" + name.getMethodName())
             .build();
 
     String host = "localhost";
@@ -362,13 +364,14 @@ public class IntegrationTest {
 
         // Discover Staging streams
         AccurevSCMSource accurevSCMSource = new AccurevSCMSource(null, "localhost", "5050", depot, "1");
-        accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,true)));
+        accurevSCMSource.setTraits(Collections.singletonList(new BuildItemsDiscoveryTrait(true, false,false,false,false)));
 
         // Find builds
         multiProject.getSourcesList().add(new BranchSource(accurevSCMSource, new DefaultBranchPropertyStrategy(new BranchProperty[0])));
         multiProject.scheduleBuild2(0).getFuture().get();
 
         rule.waitUntilNoActivity();
+
         // should be transaction 4.
         assertTrue(getBrokerLog().contains("Transaction built: 4"));
 
@@ -446,8 +449,8 @@ public class IntegrationTest {
         client.workspace().create(workspace1, depot).execute();
         List<String> files = new ArrayList<>();
         files.add(jenkinsFile.getAbsolutePath());
-        client.add().add(files).comment("test").execute();
-        client.promote().files(files).comment("test").execute();
+        client.add().add(files).comment("test").execute(); //Transaction 3
+        client.promote().files(files).comment("test").execute(); //Transaction 4
 
         //Attach trigger
         attachPromoteTrigger(depot);
@@ -463,18 +466,28 @@ public class IntegrationTest {
         rule.waitUntilNoActivity();
         Thread.sleep(20000);
 
+
+
+        // Only expect multibranch scan to find one job
+        assertEquals(1, multiProject.getAllJobs().iterator().next().getBuilds().size());
+
         assertTrue(getBrokerLog().contains("Transaction built: 4"));
 
         // Promote new file, should trigger an update
         File file = AccurevTestExtensions.createFile(multiProject.getComputationDir().getPath(), "File",  "initial file");
         files = new ArrayList<>();
         files.add(file.getAbsolutePath());
-        client.add().add(files).comment("test new file").execute();
-        client.promote().files(files).comment("test new file").execute();
+        client.add().add(files).comment("test new file").execute(); //Transaction 5
+        client.promote().files(files).comment("test new file").execute(); //Transaction 6
 
         Thread.sleep(20000);
         rule.waitUntilNoActivity();
         assertTrue(getBrokerLog().contains("Transaction built: 6"));
+
+
+        // Triggered build should be build two
+        assertEquals(2, multiProject.getAllJobs().iterator().next().getBuilds().size());
+
     }
 
     private void sendMQTTMessage(String topic, String content) throws UnsupportedEncodingException {

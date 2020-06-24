@@ -17,7 +17,7 @@ use constant {
 use Fcntl qw(:flock :seek);
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(generateCustomIcon log_trigger_error CREATED UPDATED DELETED);
+our @EXPORT = qw(hookIsEnabled generateCustomIcon log_trigger_error CREATED UPDATED DELETED);
 
 # generate the streamCustomIcon xml
 #  status should be a string with one of the allowed icon images: running, failed, success, warning
@@ -38,6 +38,30 @@ sub generateCustomIcon($$$) {
    }
    $xml = $xml . "</streamicon>";
    return $xml;
+}
+
+sub hookIsEnabled{
+   my (@parameters) = @_;
+   my $filter = $parameters[0];
+
+   my $dir = dirname(rel2abs($0));
+   my $file = "$dir/enable_webhooks";
+   my $found = 0;
+
+   open(FH, $file) or die("File $file not found");
+
+   while(my $String = <FH>)
+   {
+      if($String =~ /^#/){
+         next;
+      }
+      elsif($filter =~ /$String/)
+      {
+         $found = 1;
+      }
+   }
+   close(FH);
+   return $found
 }
 
 sub log_trigger_error {
