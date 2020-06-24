@@ -28,7 +28,7 @@ public abstract class BuildChooser implements ExtensionPoint, Describable<BuildC
         throw new UnsupportedOperationException("getCandidateRevisions method must be overridden");
     }
 
-    public Collection<AccurevTransaction> getCandidateTransactions(boolean isPollCall, String streamSpec, AccurevClient ac, TaskListener listener, BuildData data, AccurevTransaction bound){
+    public Collection<AccurevTransaction> getCandidateTransactions(boolean isPollCall, String streamSpec, AccurevClient ac, TaskListener listener, BuildData data, long bound){
         throw new UnsupportedOperationException("getCandidateRevisions method must be overridden");
     }
 

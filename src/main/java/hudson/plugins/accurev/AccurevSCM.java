@@ -290,7 +290,6 @@ public class AccurevSCM extends SCM implements Serializable {
         Set files = new HashSet();
         files.add(".");
         ac.update();
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "before populate");
         PopulateCommand populateCommand = ac.populate();
 
         boolean requiresWorkspace = false;
@@ -370,17 +369,14 @@ public class AccurevSCM extends SCM implements Serializable {
         *
         */
         Collection<AccurevTransaction> candidates = Collections.emptyList();
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Before calculate candidates");
-
         final SCMRevisionAction sra = build.getAction(SCMRevisionAction.class);
         if(candidates.isEmpty()) {
             if (sra != null) {
                 AccurevSCMHead head = (AccurevSCMHead) sra.getRevision().getHead();
-                System.out.println("calculation revison for: " + head.getName() + " at transaction: " + head.getTransaction().getId());
-                candidates = getBuildChooser().getCandidateTransactions(false, getSingleStream(), ac , listener, buildData, head.getTransaction());
+                System.out.println("calculation revison for: " + head.getName() + " at transaction: " + head.getHash());
+                candidates = getBuildChooser().getCandidateTransactions(false, getSingleStream(), ac , listener, buildData, head.getHash());
             }
         }
-
 
         if(candidates.isEmpty()){
             final String singleStream = environment.expand( getSingleStream() );
@@ -388,7 +384,6 @@ public class AccurevSCM extends SCM implements Serializable {
             candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
             listener.getLogger().println(candidates.isEmpty());
         }
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Candidates found");
 
         Build transToBuild;
         if(!candidates.isEmpty()) {
@@ -402,8 +397,6 @@ public class AccurevSCM extends SCM implements Serializable {
             transToBuild = new Build(stream, markedTransaction,  candidates, build.getNumber(), null);
             buildData.saveBuild(transToBuild);
         }
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Lastbuild builddata saved");
-
 
         /**
          *
@@ -411,12 +404,9 @@ public class AccurevSCM extends SCM implements Serializable {
          * Depending on level, get n-level children.
          *
          */
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Determine affected streams");
-
         Collection<AccurevStream> affectedStreams = newArrayList();
         for (AccurevSCMExtension ext : extensions) {
             Collection<AccurevStream> affected = ext.getAffectedToBuild(this, transToBuild, ac);
-            listener.getLogger().println("there are " + affected.size() + " affected streams");
             if(!affected.isEmpty()) affectedStreams.addAll(affected);
         }
         if(!affectedStreams.isEmpty()) {
@@ -446,7 +436,6 @@ public class AccurevSCM extends SCM implements Serializable {
                 });
             }
         }
-        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Determine affected streams done");
         return transToBuild;
 
     }

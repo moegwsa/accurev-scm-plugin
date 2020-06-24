@@ -127,10 +127,6 @@ public class AccurevSCMSource extends SCMSource {
         this.listener = taskListener;
         taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Retrieving from Accurev");
 
-
-        listener.getLogger().println("retrieve with filtering");
-        System.out.println("retrieve with filtering");
-
         Collection<AccurevStream> streams = Collections.emptyList();
 
         Node instance = Jenkins.getInstanceOrNull();
@@ -141,10 +137,12 @@ public class AccurevSCMSource extends SCMSource {
             launcher = new Launcher.LocalLauncher(taskListener);
         }
         Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
+
         accurevClient = accurev.getClient();
         accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
 
         AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(scmSourceCriteria, scmHeadObserver).withTraits(getTraits());
+
         try (AccurevSCMSourceRequest request = context.newRequest(this, taskListener)) {
             List<Boolean> present = new ArrayList<>(Arrays.asList(
                     context.isWantStreams(),
@@ -154,45 +152,47 @@ public class AccurevSCMSource extends SCMSource {
                     context.iswantGatedStreams(),
                     true));
 
+            // Translate wanted types for search
             Collection<AccurevStreamType> wantedTypes = IntStream.range(0, present.size()).filter(present::get).mapToObj(i -> AccurevStreamType.values()[i]).
                     collect(Collectors.toCollection(() -> EnumSet.noneOf(AccurevStreamType.class)));
 
-            taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Client logged in");
-
-            taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " start filtering streams");
+            System.out.println("retrieve with filtering");
             if (context.getTopStream().isEmpty()) {
                 streams = accurevClient.fetchStreams(depot, wantedTypes);
             } else {
                 streams = accurevClient.fetchChildStreams(depot, context.getTopStream(), wantedTypes);
             }
 
-
             for (AccurevStream stream : streams) {
+
+                long highest = 0;
+
+                if (scmHeadEvent != null){
+                    AccurevCommitPayload payload = (AccurevCommitPayload) scmHeadEvent.getPayload();
+                    if(!stream.getName().equals(payload.getStream())){
+                        continue;
+                    }
+                    if (payload.getTransaction().equals("" + 1)){
+                        highest = accurevClient.fetchTransaction(payload.getStream()).getId();
+                    } else{
+                        highest = Long.parseLong(payload.getTransaction());
+                    }
+
+                }
+                else if(scmHeadEvent == null ){
+                    highest = accurevClient.fetchTransaction(stream.getName()).getId();
+                }
+
                 if (stream.getType().equals(AccurevStreamType.Staging) && accurevClient.getActiveElements(stream.getName()).getFiles().size() == 0) {
                     continue;
                 }
 
-                AccurevTransaction highest = null;
-
-                if (scmHeadEvent != null ) {
-                    AccurevCommitPayload payload = (AccurevCommitPayload) scmHeadEvent.getPayload();
-                    if (payload.getTransaction().equals("" + 1)){
-                        highest = accurevClient.fetchTransaction(stream.getName());
-                    } else{
-                        highest = accurevClient.fetchTransaction(stream.getName(),
-                                Long.parseLong(payload.getTransaction()));
-                    }
-                }else {
-                    highest = accurevClient.fetchTransaction(stream.getName());
-
-                }
-                System.out.println("working on transaction: " + highest.getId() + " for stream " + stream.getName());
+                System.out.println("working on transaction: " + highest + " for stream " + stream.getName());
                 SCMHead head = new SCMHead(stream.getName());
-                SCMRevisionImpl revision = new SCMRevisionImpl(head, highest.getId());
+                SCMRevisionImpl revision = new SCMRevisionImpl(head, highest);
                 AccurevSCMHead accurevHead = new AccurevSCMHead(revision.getHead().getName());
-                accurevHead.setTransaction(highest);
-                accurevHead.setHash(highest.getId());
-                if ( scmSourceCriteria == null || request.process(
+                accurevHead.setHash(highest);
+                if (scmSourceCriteria == null || request.process(
                         accurevHead,
                         (SCMSourceRequest.RevisionLambda) (AccurevSCMHead) -> new AccurevSCMRevision(accurevHead, revision.getHash()),
                         (aHead, aRevision) -> new StreamSCMProbe(head.getName(), revision.getHash(), accurevClient),
@@ -206,9 +206,21 @@ public class AccurevSCMSource extends SCMSource {
 
                             }
                         })
-                );
+                ) ;
             }
+
             taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " filtering is done");
+        }
+    }
+
+
+    @Override
+    protected SCMRevision retrieve(@NonNull SCMHead head, @NonNull TaskListener taskListener) throws IOException, InterruptedException {
+        System.out.println("retrieve from head");
+        AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(null, SCMHeadObserver.none()).withTraits(getTraits());
+        try (AccurevSCMSourceRequest ignored = context.newRequest(this, taskListener)) {
+            AccurevSCMHead accurevHead = (AccurevSCMHead) head;
+            return new AccurevSCMRevision(accurevHead, accurevHead.getHash());
         }
     }
 
@@ -265,17 +277,6 @@ public class AccurevSCMSource extends SCMSource {
             }
         }
         return super.retrieve(revision,taskListener,context);
-    }
-
-    @Override
-    protected SCMRevision retrieve(@NonNull SCMHead head, @NonNull TaskListener taskListener) throws IOException, InterruptedException {
-        taskListener.getLogger().println("retrieve from head");
-        System.out.println("retrieve from head");
-        AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(null, SCMHeadObserver.none()).withTraits(getTraits());
-        try (AccurevSCMSourceRequest ignored = context.newRequest(this, taskListener)) {
-            AccurevSCMHead accurevHead = (AccurevSCMHead) head;
-            return new AccurevSCMRevision(accurevHead, accurevHead.getHash());
-        }
     }
 
     @NonNull

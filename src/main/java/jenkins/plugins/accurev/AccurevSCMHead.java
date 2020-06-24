@@ -5,7 +5,6 @@ import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import jenkins.scm.api.SCMHead;
 
 public class AccurevSCMHead extends SCMHead {
-    private AccurevTransaction transaction;
     private long hash;
     
     public AccurevSCMHead(@NonNull String name) {
@@ -20,13 +19,7 @@ public class AccurevSCMHead extends SCMHead {
         this.hash = hash;
     }
 
-    public AccurevTransaction getTransaction() {
-        return transaction;
-    }
 
-    public void setTransaction(AccurevTransaction transaction) {
-        this.transaction = transaction;
-    }
 
 
 
