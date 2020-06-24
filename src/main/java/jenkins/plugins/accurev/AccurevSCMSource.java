@@ -150,7 +150,8 @@ public class AccurevSCMSource extends SCMSource {
                     context.isWantWorkspaces(),
                     context.isWantPassThroughs(),
                     context.iswantGatedStreams(),
-                    true));
+                    context.iswantStagingStreams())
+            );
 
             // Translate wanted types for search
             Collection<AccurevStreamType> wantedTypes = IntStream.range(0, present.size()).filter(present::get).mapToObj(i -> AccurevStreamType.values()[i]).
@@ -405,7 +406,7 @@ public class AccurevSCMSource extends SCMSource {
 
 
         public List<SCMSourceTrait> getTraitsDefaults() {
-            return Collections.<SCMSourceTrait>singletonList(new BuildItemsDiscoveryTrait(true, false, false, false, false));
+            return Collections.<SCMSourceTrait>singletonList(new BuildItemsDiscoveryTrait(true, false, false, false, false, false));
         }
 
 

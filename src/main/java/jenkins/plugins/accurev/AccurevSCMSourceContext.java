@@ -16,6 +16,7 @@ public class AccurevSCMSourceContext<C extends AccurevSCMSourceContext<C, R>, R 
     private boolean wantSnapshots;
     private boolean wantPassThroughs;
     private boolean wantGatedStreams;
+    private boolean wantStagingStreams;
 
     public AccurevSCMSourceContext(SCMSourceCriteria criteria, @NonNull SCMHeadObserver observer) {
         super(criteria, observer);
@@ -48,6 +49,10 @@ public class AccurevSCMSourceContext<C extends AccurevSCMSourceContext<C, R>, R 
         return wantGatedStreams;
     }
 
+    public boolean iswantStagingStreams() {
+        return wantStagingStreams;
+    }
+
     public C wantStreams(boolean include) {
         wantStreams = wantStreams || include;
         return (C) this;
@@ -74,6 +79,11 @@ public class AccurevSCMSourceContext<C extends AccurevSCMSourceContext<C, R>, R 
 
     public C wantGatedStreams(boolean include) {
         wantGatedStreams = wantGatedStreams || include;
+        return (C) this;
+    }
+
+    public C wantStagingStreams(boolean include) {
+        wantStagingStreams = wantStagingStreams || include;
         return (C) this;
     }
 
