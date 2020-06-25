@@ -378,13 +378,6 @@ public class AccurevSCM extends SCM implements Serializable {
             }
         }
 
-        if(candidates.isEmpty()){
-            final String singleStream = environment.expand( getSingleStream() );
-
-            candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
-            listener.getLogger().println(candidates.isEmpty());
-        }
-
         Build transToBuild;
         if(!candidates.isEmpty()) {
             AccurevTransaction markedTransaction = candidates.stream().max(Comparator.comparing(i -> i.getId())).get();
