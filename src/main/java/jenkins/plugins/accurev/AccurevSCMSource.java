@@ -575,7 +575,9 @@ public class AccurevSCMSource extends SCMSource {
         @Override
         public SCMProbeStat stat(@NonNull String path) throws IOException {
             try {
-                accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+                if(accurevClient.getInfo().getLoggedOut()){
+                    accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
