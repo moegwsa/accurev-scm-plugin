@@ -15,24 +15,25 @@ import hudson.Util;
 import hudson.model.*;
 import hudson.model.Queue;
 import hudson.model.queue.Tasks;
+import hudson.plugins.accurev.browsers.AccurevWeb;
 import hudson.plugins.accurev.extensions.AccurevSCMExtension;
 import hudson.plugins.accurev.extensions.AccurevSCMExtensionDescriptor;
 import hudson.plugins.accurev.util.*;
 import hudson.plugins.accurev.util.Build;
-import hudson.scm.ChangeLogParser;
-import hudson.scm.PollingResult;
-import hudson.scm.SCM;
-import hudson.scm.SCMDescriptor;
-import hudson.scm.SCMRevisionState;
+import hudson.scm.*;
 import hudson.security.ACL;
 import hudson.util.DescribableList;
+import jenkins.plugins.accurev.AccurevSCMHead;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
 import jenkins.plugins.accurevclient.AccurevException;
 import jenkins.plugins.accurevclient.commands.PopulateCommand;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
+import jenkins.plugins.accurevclient.model.AccurevTransactionVersion;
+import jenkins.scm.api.SCMRevisionAction;
 import net.sf.json.JSONObject;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.jetbrains.annotations.NotNull;
@@ -49,6 +50,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.io.Writer;
+import java.net.MalformedURLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -67,6 +69,9 @@ public class AccurevSCM extends SCM implements Serializable {
     private String source = null;
     private List<StreamSpec> streams;
     private List<ServerRemoteConfig> serverRemoteConfigs;
+
+    @CheckForNull
+    private AccurevRepositoryBrowser repositoryBrowser;
     @SuppressFBWarnings(value="SE_BAD_FIELD", justification="Known non-serializable field")
     private AccurevClient ac;
     @SuppressFBWarnings(value="SE_BAD_FIELD", justification="Known non-serializable field")
@@ -83,6 +88,8 @@ public class AccurevSCM extends SCM implements Serializable {
         streams = Collections.singletonList(new StreamSpec(""));
         this.extensions = new DescribableList<>(Saveable.NOOP, Util.fixNull(extensions));
     }
+
+
 
     @Override
     public boolean supportsPolling() {
@@ -113,11 +120,14 @@ public class AccurevSCM extends SCM implements Serializable {
     }
 
     @DataBoundConstructor
-    public AccurevSCM(List<ServerRemoteConfig> serverRemoteConfigs, List<StreamSpec> streams,  List<AccurevSCMExtension> extensions){
+    public AccurevSCM(List<ServerRemoteConfig> serverRemoteConfigs, List<StreamSpec> streams,  List<AccurevSCMExtension> extensions, @CheckForNull AccurevRepositoryBrowser browser){
         this.streams = isEmpty(streams) ? newArrayList(new StreamSpec("wasEmpty", "")) : streams;
         this.serverRemoteConfigs = serverRemoteConfigs;
         this.extensions = new DescribableList<>(Saveable.NOOP, Util.fixNull(extensions));
+        this.repositoryBrowser = browser;
     }
+
+
 
     @Override
     public ChangeLogParser createChangeLogParser() {
@@ -130,13 +140,33 @@ public class AccurevSCM extends SCM implements Serializable {
         return depotList;
     }
 
+    @Whitelisted
+    @Exported
+    @Override
+    public AccurevRepositoryBrowser getBrowser() {
+        return repositoryBrowser;
+    }
+
+    public void setBrowser(AccurevRepositoryBrowser browser) {
+        this.repositoryBrowser = browser;
+    }
+
+    @CheckForNull
+    @Override
+    public RepositoryBrowser<?> guessBrowser() {
+        try {
+            return new AccurevWeb("http://" + getServerRemoteConfigs().get(0).getHost() + ":8080/accurev/");
+        } catch (MalformedURLException x) {
+            LOGGER.log(Level.FINE, null, x); // OK, could just be a local directory path
+            return null;
+        }
+    }
 
 
     @Override
     public PollingResult compareRemoteRevisionWith(Job<?, ?> project, Launcher launcher, FilePath workspace, final @NonNull TaskListener listener, @NotNull SCMRevisionState baseline) throws IOException, InterruptedException {
         // Poll for changes. Are there any unbuilt revisions that Hudson ought to build ?
         listener.getLogger().println("Using strategy: " + getBuildChooser().getDisplayName());
-
         final Run lastBuild = project.getLastBuild();
         if (lastBuild == null) {
             // If we've never been built before, well, gotta build!
@@ -233,20 +263,20 @@ public class AccurevSCM extends SCM implements Serializable {
         return Collections.unmodifiableList(serverRemoteConfigs);}
 
 
+
     @Override
     public void checkout(Run<?, ?> build, Launcher launcher, FilePath workspace, TaskListener listener, File changelogFile, SCMRevisionState baseline)
             throws IOException, InterruptedException {
-        listener.getLogger().println("Checkout started");
-        listener.getLogger().println("Building stream:" + getStreams().get(0).getName());
+
         BuildData prevBuildData = getBuildData(build.getPreviousBuild());
         BuildData buildData = copyBuildData(build.getPreviousBuild());
-        BuildData buildData1 = getBuildData(build);
+        System.out.println("Checkout started");
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "Checkout started");
         if (VERBOSE && buildData.lastBuild != null) {
             listener.getLogger().println("Last Built TransactionId: " + buildData.lastBuild.transaction);
         }
         EnvVars environment = build.getEnvironment(listener);
         createClient(listener, environment, build, workspace, launcher);
-
 
         retrieveChanges(build, ac, listener);
         Build transactionToBuild = determineTransactionToBuild(build, buildData, environment, ac, listener);
@@ -280,7 +310,7 @@ public class AccurevSCM extends SCM implements Serializable {
         }
 
         populateCommand.execute();
-        listener.getLogger().println("Checkout done");
+        listener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + "Checkout done");
         if (changelogFile != null) {
             computeChangeLog(ac, listener, transactionToBuild, prevBuildData, buildData, new FilePath(changelogFile));
         }
@@ -288,7 +318,6 @@ public class AccurevSCM extends SCM implements Serializable {
 
     @Override
     public void buildEnvVars(AbstractBuild<?, ?> build, Map<String, String> env) {
-        //LOGGER.log(Level.WARNING, "deprecated call to to Run.getEnvVars");
         buildEnvironment(build, env);
     }
 
@@ -303,10 +332,6 @@ public class AccurevSCM extends SCM implements Serializable {
                 env.put(ACCUREV_SERVER, config.getHost());
                 env.put(ACCUREV_PORT, config.getPort());
             }
-
-//            if (build instanceof AbstractBuild) {
-//                buildEnvVars((AbstractBuild) build, env );
-//            }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "failed to load environment" + e.getMessage());
         }
@@ -322,6 +347,11 @@ public class AccurevSCM extends SCM implements Serializable {
                 out.write("    " + at.getComment() + "    \n");
                 out.write("Type: " + at.getType() + "\n");
                 out.write("User: " + at.getUser() + "\n");
+                if( at.getVersion() != null){
+                    for(AccurevTransactionVersion version : at.getVersion()){
+                        out.write("File: " + version.getPath() + "\n");
+                    }
+                }
                 out.write("Time: " + df.format(at.getTime()) + "\n");
             }
         }catch(InterruptedException e){
@@ -339,12 +369,19 @@ public class AccurevSCM extends SCM implements Serializable {
         *
         */
         Collection<AccurevTransaction> candidates = Collections.emptyList();
+        final SCMRevisionAction sra = build.getAction(SCMRevisionAction.class);
+        final CauseAction ca = build.getAction(CauseAction.class);
 
-        if(candidates.isEmpty()){
-            final String singleStream = environment.expand( getSingleStream() );
-
-            candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
-
+        if(candidates.isEmpty()) {
+            if (sra != null && ca.findCause(Cause.UserIdCause.class) == null) {
+                AccurevSCMHead head = (AccurevSCMHead) sra.getRevision().getHead();
+                System.out.println("calculation revision for: " + head.getName() + " at transaction: " + head.getHash());
+                candidates = getBuildChooser().getCandidateTransactions(false, getSingleStream(), ac , listener, buildData, head.getHash());
+            } else {
+                final String singleStream = environment.expand( getSingleStream() );
+                candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
+                listener.getLogger().println(candidates.isEmpty());
+            }
         }
 
         Build transToBuild;
@@ -371,7 +408,6 @@ public class AccurevSCM extends SCM implements Serializable {
             Collection<AccurevStream> affected = ext.getAffectedToBuild(this, transToBuild, ac);
             if(!affected.isEmpty()) affectedStreams.addAll(affected);
         }
-
         if(!affectedStreams.isEmpty()) {
             ItemGroup folder = build.getParent().getParent();
             if (folder instanceof WorkflowMultiBranchProject) {
@@ -399,7 +435,6 @@ public class AccurevSCM extends SCM implements Serializable {
                 });
             }
         }
-
         return transToBuild;
 
     }
@@ -520,8 +555,21 @@ public class AccurevSCM extends SCM implements Serializable {
     public static final class DescriptorImpl extends SCMDescriptor<AccurevSCM> {
 
         public DescriptorImpl() {
-            super(AccurevSCM.class, null);
+            super(AccurevSCM.class, AccurevRepositoryBrowser.class);
             load();
+        }
+
+
+
+        @Override
+        public SCM newInstance(@Nullable StaplerRequest req, @Nonnull JSONObject formData) throws FormException {
+            AccurevSCM scm = (AccurevSCM) super.newInstance(req,formData);
+            scm.repositoryBrowser = RepositoryBrowsers.createInstance(
+                    AccurevRepositoryBrowser.class,
+                    req,
+                    formData,
+                    "browser");
+            return scm;
         }
 
         public String getDisplayName(){

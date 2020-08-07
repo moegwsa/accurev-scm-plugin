@@ -1,14 +1,16 @@
 package hudson.plugins.accurev;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 import hudson.Extension;
 import hudson.ExtensionPoint;
 import hudson.Util;
-import hudson.model.Cause;
-import hudson.model.Item;
-import hudson.model.UnprotectedRootAction;
+import hudson.model.*;
+import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMEvent;
 import jenkins.scm.api.SCMHeadEvent;
 import org.apache.commons.lang.StringUtils;
+
 import org.kohsuke.stapler.*;
 
 import javax.annotation.CheckForNull;
@@ -20,6 +22,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,6 +40,7 @@ public class AccurevStatus implements UnprotectedRootAction {
     private String lastTransaction = null;
     private String lastPrincipal = null;
     private Reason lastReason = null;
+
 
     @CheckForNull
     @Override
@@ -93,7 +97,9 @@ public class AccurevStatus implements UnprotectedRootAction {
         URI uri;
 
         LOGGER.log(Level.FINE, "Received hook from : " + host + ", stream: " + streams);
-        System.out.println( "Received hook from : " + host + ", stream: " + streams + ", for reason " + reason);
+
+        System.out.println( "Received hook from : " + host + ", stream: " + streams + ", at transaction " + transaction + " , for reason " + reason);
+
 
         try {
             uri = new URI(host + ":" + port);
@@ -109,11 +115,13 @@ public class AccurevStatus implements UnprotectedRootAction {
             streamsArray = streams.split(",");
         }
         String origin = SCMEvent.originOf(request);
+
         if (streamsArray.length > 0) {
             for (String stream : streamsArray) {
                 switch (lastReason != null ? lastReason : Reason.NONE ) {
                     case CREATED:
                         if (StringUtils.isNotBlank(stream) ) {
+                            System.out.println("notify created action for " + stream);
                             transaction = transaction.isEmpty() ? transaction : "1";
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.CREATED, new AccurevCommitPayload(uri, stream, transaction), origin));
@@ -121,7 +129,9 @@ public class AccurevStatus implements UnprotectedRootAction {
                         }
                     case UPDATED:
                         if (StringUtils.isNotBlank(stream) && StringUtils.isNotBlank(transaction)) {
-                            System.out.println("notify update action");
+
+                            System.out.println("notify update action for " + stream);
+
 
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.UPDATED, new AccurevCommitPayload(uri, stream, transaction), origin));
@@ -129,7 +139,9 @@ public class AccurevStatus implements UnprotectedRootAction {
                         }
                     case DELETED:
                         if (StringUtils.isNotBlank(stream) ) {
-                            System.out.println("notify delete action");
+
+                            System.out.println("notify delete action for " + stream);
+
                             transaction = transaction.isEmpty() ? transaction : "1";
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.REMOVED, new AccurevCommitPayload(uri, stream, transaction), origin));
@@ -146,6 +158,7 @@ public class AccurevStatus implements UnprotectedRootAction {
             staplerResponse.addHeader("Success", "Test Message");
         };
     }
+
 
     public static abstract class Listener implements ExtensionPoint {
         public  List<ResponseContributor> onNotifyCommit(String origin,
@@ -251,10 +264,20 @@ public class AccurevStatus implements UnprotectedRootAction {
 
     }
 
+
     public static boolean looselyMatches(URI lhs, URI rhs) {
         return StringUtils.equals(lhs.getHost(),rhs.getHost())
                 && StringUtils.equals(lhs.getPath(), rhs.getPath());
     }
+
+    public static boolean looselyMatches(@CheckForNull Collection<? extends Job> lhs, String rhs) {
+        return lhs.stream().anyMatch(x -> x.getName().equals(rhs));
+    }
+
+    static private boolean isUnexpandedEnvVar(String str) {
+        return str.startsWith("$");
+    }
+
 
     public static class ResponseContributor {
         /**

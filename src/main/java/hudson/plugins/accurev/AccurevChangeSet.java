@@ -8,10 +8,7 @@ import org.kohsuke.stapler.export.ExportedBean;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class AccurevChangeSet extends ChangeLogSet.Entry {
     private String transactionId;
@@ -59,8 +56,16 @@ public class AccurevChangeSet extends ChangeLogSet.Entry {
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
-            }else if (line.startsWith(":")){
-                // TODO: AffectedPaths
+            }else if (line.startsWith("File: ")){
+                String[] split = line.split(" ");
+                if(split.length > 1 ) {
+                    affectedPaths = getAffectedPaths();
+                    if (affectedPaths.isEmpty()){
+                        affectedPaths = new ArrayList<String>();
+                    }
+                    affectedPaths.add(split[1]);
+                    setAffectedPaths(affectedPaths);
+                }
             }
         }
         this.title = message.toString();
@@ -114,6 +119,11 @@ public class AccurevChangeSet extends ChangeLogSet.Entry {
     public Collection<String> getAffectedPaths() {
         return affectedPaths;
     }
+
+    private void setAffectedPaths(Collection<String> value){
+        affectedPaths = value;
+    }
+
 
     @ExportedBean(defaultVisibility=999)
     public static class Path implements ChangeLogSet.AffectedFile {

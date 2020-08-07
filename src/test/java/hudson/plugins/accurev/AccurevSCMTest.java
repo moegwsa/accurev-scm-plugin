@@ -86,7 +86,7 @@ public class AccurevSCMTest {
                 arg.add("perl");
                 arg.add("./updateJenkinsHook.pl");
                 arg.add(jenkinsPort);
-                arg.add("host.docker.internal");
+                arg.add("http://host.docker.internal");
                 return arg;
             }
         };
@@ -159,7 +159,7 @@ public class AccurevSCMTest {
         AccurevSCM scm = new AccurevSCM(
                 AccurevSCM.createDepotList(host, port,  "accurev"),
                 Collections.singletonList(new StreamSpec(depot, depot)),
-                null
+                null, null
                         );
         project.setScm(scm);
         return project;

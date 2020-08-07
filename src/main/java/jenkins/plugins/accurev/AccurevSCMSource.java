@@ -8,21 +8,26 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.Launcher;
-import hudson.Util;
+import hudson.*;
 import hudson.model.*;
+import hudson.model.Queue;
 import hudson.model.queue.Tasks;
+import hudson.plugins.accurev.AccurevCommitPayload;
+import hudson.plugins.accurev.AccurevRepositoryBrowser;
+import hudson.plugins.accurev.AccurevSCM;
 import hudson.plugins.accurev.AccurevSCMRevision;
+import hudson.scm.RepositoryBrowser;
+import hudson.scm.RepositoryBrowsers;
 import hudson.scm.SCM;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import jenkins.plugins.accurev.traits.AccurevBrowserSCMSourceTrait;
 import jenkins.plugins.accurev.traits.BuildItemsDiscoveryTrait;
 import jenkins.plugins.accurevclient.Accurev;
 import jenkins.plugins.accurevclient.AccurevClient;
+import jenkins.plugins.accurevclient.AccurevException;
 import jenkins.plugins.accurevclient.model.AccurevStream;
 import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevStreams;
@@ -31,11 +36,15 @@ import jenkins.scm.api.*;
 import jenkins.scm.api.trait.SCMSourceRequest;
 import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMSourceTraitDescriptor;
+import jenkins.scm.api.trait.SCMTrait;
 import jenkins.scm.impl.form.NamedArrayList;
 import jenkins.scm.impl.trait.Discovery;
 import jenkins.scm.impl.trait.Selection;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -45,10 +54,11 @@ import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class AccurevSCMSource extends SCMSource {
 
@@ -58,6 +68,9 @@ public class AccurevSCMSource extends SCMSource {
     private final String depot;
     private AccurevClient accurevClient;
     private String credentialsId;
+
+    @Deprecated
+    private transient AccurevRepositoryBrowser browser;
 
     @NonNull
     private List<SCMSourceTrait> traits = new ArrayList<>();
@@ -111,87 +124,114 @@ public class AccurevSCMSource extends SCMSource {
                             SCMHeadEvent<?> scmHeadEvent,
                             @NonNull TaskListener taskListener)
                             throws IOException, InterruptedException {
-        taskListener.getLogger().println("Retrieving from Accurev");
         this.listener = taskListener;
+        taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " Retrieving from Accurev");
+
+        Collection<AccurevStream> streams = Collections.emptyList();
+
+        Node instance = Jenkins.getInstanceOrNull();
+        Launcher launcher;
+        if (instance != null) {
+            launcher = instance.createLauncher(taskListener);
+        } else {
+            launcher = new Launcher.LocalLauncher(taskListener);
+        }
+        Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
+
+        accurevClient = accurev.getClient();
+        accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
 
         AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(scmSourceCriteria, scmHeadObserver).withTraits(getTraits());
+
+
         try (AccurevSCMSourceRequest request = context.newRequest(this, taskListener)) {
+            List<Boolean> present = new ArrayList<>(Arrays.asList(
+                    context.isWantStreams(),
+                    context.isWantSnapshots(),
+                    context.isWantWorkspaces(),
+                    context.isWantPassThroughs(),
+                    context.iswantGatedStreams(),
+                    context.iswantStagingStreams())
+            );
 
-            Node instance = Jenkins.getInstanceOrNull();
-            Launcher launcher;
-            if(instance != null) {
-                launcher = instance.createLauncher(taskListener);
-            }else {
-                launcher = new Launcher.LocalLauncher(taskListener);
-            }
-            Accurev accurev = Accurev.with(taskListener, new EnvVars(), launcher).at(Jenkins.getInstanceOrNull().root).on(remote);
-            accurevClient = accurev.getClient();
-            accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
 
-            AccurevStreams streams;
+            // Translate wanted types for search
+            Collection<AccurevStreamType> wantedTypes = IntStream.range(0, present.size()).filter(present::get).mapToObj(i -> AccurevStreamType.values()[i]).
+                    collect(Collectors.toCollection(() -> EnumSet.noneOf(AccurevStreamType.class)));
 
+            System.out.println("retrieve with filtering");
             if (context.getTopStream().isEmpty()) {
-                streams = accurevClient.getStreams(depot);
+                streams = accurevClient.fetchStreams(depot, wantedTypes);
             } else {
-                streams = accurevClient.getChildStreams(depot, context.getTopStream());
+                streams = accurevClient.fetchChildStreams(depot, context.getTopStream(), wantedTypes);
             }
 
-            for (AccurevStream stream : streams.getList()) {
+            for (AccurevStream stream : streams) {
 
-                taskListener.getLogger().println("Processing object: " + stream.getName());
-                if (!context.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
-                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
-                    continue;
+                long highest = 0;
+
+                if (scmHeadEvent != null){
+                    AccurevCommitPayload payload = (AccurevCommitPayload) scmHeadEvent.getPayload();
+                    if(!stream.getName().equals(payload.getStream())){
+                        continue;
+                    }
+                    if (payload.getTransaction().equals("" + 1)){
+                        highest = accurevClient.fetchTransaction(payload.getStream()).getId();
+                    } else{
+                        highest = Long.parseLong(payload.getTransaction());
+                    }
+
+
                 }
-                if (!context.isWantWorkspaces() && stream.getType().equals(AccurevStreamType.Workspace)) {
-                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build workspaces");
-                    continue;
-                }
-                if (!context.isWantSnapshots() && stream.getType().equals(AccurevStreamType.Snapshot)) {
-                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build snapshots");
-                    continue;
-                }
-                if (!context.isWantPassThroughs() && stream.getType().equals(AccurevStreamType.PassThrough)) {
-                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build pass through types");
-                    continue;
-                }
-                if (!context.iswantGatedStreams() && stream.getType().equals(AccurevStreamType.Staging)) {
-                    System.out.println("Discarded object: " + stream.getName() + ". Reason: Don't want to build gated streams");
-                    continue;
+                else if(scmHeadEvent == null ){
+                    highest = accurevClient.fetchTransaction(stream.getName()).getId();
                 }
 
-                if(stream.getType().equals(AccurevStreamType.Staging) && accurevClient.getActiveElements(stream.getName()).getFiles().size() == 0){
-                    taskListener.getLogger().println("Discarded object: " + stream.getName() + "Because default group is empty");
-                    System.out.println("Discarded object: " + stream.getName() + "Because default group is empty");
+                if (stream.getType().equals(AccurevStreamType.Staging) && accurevClient.getActiveElements(stream.getName()).getFiles().size() == 0) {
 
                     continue;
                 }
 
-                AccurevTransaction highest = accurevClient.fetchTransaction(stream.getName());
+                System.out.println("working on transaction: " + highest + " for stream " + stream.getName());
                 SCMHead head = new SCMHead(stream.getName());
-
-                SCMRevisionImpl revision = new SCMRevisionImpl(head, highest.getId());
+                SCMRevisionImpl revision = new SCMRevisionImpl(head, highest);
                 AccurevSCMHead accurevHead = new AccurevSCMHead(revision.getHead().getName());
-
-                if (request.process(
+                accurevHead.setHash(highest);
+                if (scmSourceCriteria == null || request.process(
                         accurevHead,
                         (SCMSourceRequest.RevisionLambda) (AccurevSCMHead) -> new AccurevSCMRevision(accurevHead, revision.getHash()),
                         (aHead, aRevision) -> new StreamSCMProbe(head.getName(), revision.getHash(), accurevClient),
                         (SCMSourceRequest.Witness) (head1, revision1, isMatch) -> {
                             if (isMatch) {
                                 taskListener.getLogger().println("    Met criteria");
+                                System.out.println("Met criteria for: " + head.getName() + " with hash: " + revision.getHash());
                             } else {
                                 taskListener.getLogger().println("    Does not meet criteria");
+                                System.out.println("    Does not meet criteria for: " + head.getName() + " with hash: " + revision.getHash());
+
                             }
                         })
                 ) ;
             }
+
+            taskListener.getLogger().println(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()) + " filtering is done");
+        }
+    }
+
+
+    @Override
+    protected SCMRevision retrieve(@NonNull SCMHead head, @NonNull TaskListener taskListener) throws IOException, InterruptedException {
+        System.out.println("retrieve from head");
+        AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(null, SCMHeadObserver.none()).withTraits(getTraits());
+        try (AccurevSCMSourceRequest ignored = context.newRequest(this, taskListener)) {
+            AccurevSCMHead accurevHead = (AccurevSCMHead) head;
+            return new AccurevSCMRevision(accurevHead, accurevHead.getHash());
         }
     }
 
     @Override
     protected SCMRevision retrieve(@NonNull String revision, @NonNull TaskListener taskListener, @CheckForNull Item context) throws IOException, InterruptedException {
-
+        System.out.println("Retrieve from revision");
         AccurevSCMSourceContext ACcontext = new AccurevSCMSourceContext<>(null, SCMHeadObserver.none()).withTraits(getTraits());
         try (AccurevSCMSourceRequest request = ACcontext.newRequest(this, taskListener)) {
             taskListener.getLogger().println("Building from remote source: " + remote);
@@ -215,8 +255,6 @@ public class AccurevSCMSource extends SCMSource {
             }
 
             for (AccurevStream stream : streams.getList()) {
-
-                taskListener.getLogger().println("Processing object: " + stream.getName());
                 if (!ACcontext.isWantStreams() && stream.getType().equals(AccurevStreamType.Normal)) {
                     taskListener.getLogger().println("Discarded object: " + stream.getName() + ". Reason: Don't want to build normal types");
                     continue;
@@ -246,13 +284,12 @@ public class AccurevSCMSource extends SCMSource {
         return super.retrieve(revision,taskListener,context);
     }
 
-
-
     @NonNull
     @Override
     public SCM build(@NonNull SCMHead head, SCMRevision revision) {
         AccurevSCMBuilder<?> builder = newBuilder(head, revision);
         builder.withTraits(getTraits());
+        builder.withBrowser(getBrowser());
         return builder.build();
     }
 
@@ -272,7 +309,30 @@ public class AccurevSCMSource extends SCMSource {
         this.credentialsId = credentialsId;
     }
 
+    // For Stapler only
+    @Restricted(DoNotUse.class)
+    @DataBoundSetter
+    public void setBrowser(AccurevRepositoryBrowser browser) {
+        List<SCMSourceTrait> traits = new ArrayList<>(this.traits);
+        for (Iterator<SCMSourceTrait> iterator = traits.iterator(); iterator.hasNext(); ) {
+            if (iterator.next() instanceof AccurevBrowserSCMSourceTrait) {
+                iterator.remove();
+            }
+        }
+        if (browser != null) {
+            traits.add(new AccurevBrowserSCMSourceTrait(browser));
+        }
+        setTraits(traits);
+    }
 
+    @CheckForNull
+    @Deprecated
+    @Restricted(NoExternalUse.class)
+    @RestrictedSince("3.4.0")
+    public AccurevRepositoryBrowser getBrowser() {
+        AccurevBrowserSCMSourceTrait trait = SCMTrait.find(getTraits(), AccurevBrowserSCMSourceTrait.class);
+        return trait != null ? trait.getBrowser() : null;
+    }
     @DataBoundConstructor
     @SuppressWarnings("unused") // by stapler
     public AccurevSCMSource(String id, String sourceHost, String sourcePort, String depot, String credentialsId) {
@@ -326,6 +386,13 @@ public class AccurevSCMSource extends SCMSource {
         return listener;
     }
 
+    private void fetch(@NonNull TaskListener listener,
+                       @CheckForNull SCMSourceCriteria criteria,
+                       @NonNull SCMHeadObserver observer,
+                       @NonNull AccurevClient client) throws IOException, AccurevException, InterruptedException {
+
+    }
+
     @Symbol("accurev")
     @Extension
     public static class DescriptorImpl extends SCMSourceDescriptor {
@@ -340,8 +407,10 @@ public class AccurevSCMSource extends SCMSource {
             return SCMSourceTrait._for(this, AccurevSCMSourceContext.class, AccurevSCMBuilder.class);
         }
 
+
+
         public List<SCMSourceTrait> getTraitsDefaults() {
-            return Collections.<SCMSourceTrait>singletonList(new BuildItemsDiscoveryTrait(true, false, false, false, false));
+            return Collections.<SCMSourceTrait>singletonList(new BuildItemsDiscoveryTrait(true, false, false, false, false, false));
         }
 
 
@@ -410,9 +479,25 @@ public class AccurevSCMSource extends SCMSource {
 
         }
 
+
+
         AccurevClient getAccurevClient(String url) {
             AccurevClient client = Accurev.with((TaskListener) () -> null, new EnvVars(), new Launcher.LocalLauncher(null)).on(url).getClient();
             return client;
+        }
+
+        @Deprecated
+        @Restricted(NoExternalUse.class)
+        @RestrictedSince("3.4.0")
+        public AccurevSCM.DescriptorImpl getSCMDescriptor() {
+            return (AccurevSCM.DescriptorImpl)Jenkins.getActiveInstance().getDescriptor(AccurevSCM.class);
+        }
+
+        @Deprecated
+        @Restricted(DoNotUse.class)
+        @RestrictedSince("3.4.0")
+        public List<Descriptor<RepositoryBrowser<?>>> getBrowserDescriptors() {
+            return getSCMDescriptor().getBrowserDescriptors();
         }
     }
 
@@ -494,7 +579,9 @@ public class AccurevSCMSource extends SCMSource {
         @Override
         public SCMProbeStat stat(@NonNull String path) throws IOException {
             try {
-                accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+                if(accurevClient.getInfo().getLoggedOut()){
+                    accurevClient.login().username(getCredentials().getUsername()).password(getCredentials().getPassword()).execute();
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
