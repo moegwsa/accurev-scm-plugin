@@ -700,6 +700,7 @@ sub main
         # end of EXAMPLE VALIDATION 2
 
         notifyBuild(AccurevUtils->CREATED, $stream1, $depot, $principal);
+
         # no problems, allow command to proceed
         close TIO;
         exit(0);

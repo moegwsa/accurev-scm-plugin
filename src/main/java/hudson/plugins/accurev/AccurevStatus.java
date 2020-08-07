@@ -97,7 +97,9 @@ public class AccurevStatus implements UnprotectedRootAction {
         URI uri;
 
         LOGGER.log(Level.FINE, "Received hook from : " + host + ", stream: " + streams);
+
         System.out.println( "Received hook from : " + host + ", stream: " + streams + ", at transaction " + transaction + " , for reason " + reason);
+
 
         try {
             uri = new URI(host + ":" + port);
@@ -127,7 +129,9 @@ public class AccurevStatus implements UnprotectedRootAction {
                         }
                     case UPDATED:
                         if (StringUtils.isNotBlank(stream) && StringUtils.isNotBlank(transaction)) {
+
                             System.out.println("notify update action for " + stream);
+
 
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.UPDATED, new AccurevCommitPayload(uri, stream, transaction), origin));
@@ -135,7 +139,9 @@ public class AccurevStatus implements UnprotectedRootAction {
                         }
                     case DELETED:
                         if (StringUtils.isNotBlank(stream) ) {
+
                             System.out.println("notify delete action for " + stream);
+
                             transaction = transaction.isEmpty() ? transaction : "1";
                             SCMHeadEvent.fireNow(new AccurevSCMHeadEvent<String>(
                                     SCMEvent.Type.REMOVED, new AccurevCommitPayload(uri, stream, transaction), origin));

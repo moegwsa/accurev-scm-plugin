@@ -44,7 +44,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
 
 
 import static org.junit.Assert.assertEquals;
@@ -313,10 +318,8 @@ public class IntegrationTest {
 
     @Test
     public void HideEmptyStatingStreamsProjectTest() throws Exception{
-        rule.jenkins.disableSecurity();
-        rule.jenkins.save();
 
-        WorkflowMultiBranchProject multiProject = rule.jenkins.createProject(WorkflowMultiBranchProject.class, "demo");
+
 
         client = AccurevTestExtensions.createClientAtDir(multiProject.getComputationDir(), url, username, password);
         String depot = AccurevTestExtensions.generateString(10);
@@ -351,12 +354,14 @@ public class IntegrationTest {
         attachPromoteTrigger(depot);
 
         //Add jenkinsfile to top stream
+
         String workspace1 = AccurevTestExtensions.generateString(10);
         client.workspace().create(workspace1, depot).execute();
         List<String> files = new ArrayList<>();
         files.add(jenkinsFile.getAbsolutePath());
         client.add().add(files).comment("test").execute();
         client.promote().files(files).comment("test").execute();
+
 
         //Create a gated stream
         String stream = AccurevTestExtensions.generateString(10);
@@ -417,10 +422,12 @@ public class IntegrationTest {
         client = AccurevTestExtensions.createClientAtDir(multiProject.getComputationDir(), url, username, password);
         String depot = AccurevTestExtensions.generateString(10);
 
+
         // Add accurev credentials to store
         IdCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "1", null, "accurev_user", "docker");
         CredentialsProvider.lookupStores(rule.jenkins).iterator().next()
                 .addCredentials(Domain.global(), c);
+
 
         File jenkinsFile = AccurevTestExtensions.createFile(
                 multiProject.getComputationDir().getPath(),
@@ -487,6 +494,7 @@ public class IntegrationTest {
 
         // Triggered build should be build two
         assertEquals(2, multiProject.getAllJobs().iterator().next().getBuilds().size());
+
 
     }
 

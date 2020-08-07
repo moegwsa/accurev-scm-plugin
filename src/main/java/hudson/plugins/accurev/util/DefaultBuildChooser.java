@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.plugins.accurev.StreamSpec;
 import jenkins.plugins.accurevclient.AccurevClient;
+
 import jenkins.plugins.accurevclient.model.AccurevStreamType;
 import jenkins.plugins.accurevclient.model.AccurevTransaction;
 import jenkins.plugins.accurevclient.model.AccurevTransactions;
@@ -51,12 +52,14 @@ public class DefaultBuildChooser extends BuildChooser {
                 );
             }
         }
+
         if(!cAT.isEmpty()) listener.getLogger().println("New updates:");
         else listener.getLogger().println("No changes found");// TODO What if no changes happens, no new updates
 
         for(AccurevTransaction as : cAT){
             listener.getLogger().println("> Transaction id: " + as.getId() + ", comment: " + as.getComment() + ", user: " + as.getUser() + ", time: " + as.getTime());
         }
+
         return cAT;
     }
 

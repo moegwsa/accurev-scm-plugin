@@ -143,6 +143,7 @@ public class AccurevSCMSource extends SCMSource {
 
         AccurevSCMSourceContext context = new AccurevSCMSourceContext<>(scmSourceCriteria, scmHeadObserver).withTraits(getTraits());
 
+
         try (AccurevSCMSourceRequest request = context.newRequest(this, taskListener)) {
             List<Boolean> present = new ArrayList<>(Arrays.asList(
                     context.isWantStreams(),
@@ -152,6 +153,7 @@ public class AccurevSCMSource extends SCMSource {
                     context.iswantGatedStreams(),
                     context.iswantStagingStreams())
             );
+
 
             // Translate wanted types for search
             Collection<AccurevStreamType> wantedTypes = IntStream.range(0, present.size()).filter(present::get).mapToObj(i -> AccurevStreamType.values()[i]).
@@ -179,12 +181,14 @@ public class AccurevSCMSource extends SCMSource {
                         highest = Long.parseLong(payload.getTransaction());
                     }
 
+
                 }
                 else if(scmHeadEvent == null ){
                     highest = accurevClient.fetchTransaction(stream.getName()).getId();
                 }
 
                 if (stream.getType().equals(AccurevStreamType.Staging) && accurevClient.getActiveElements(stream.getName()).getFiles().size() == 0) {
+
                     continue;
                 }
 
