@@ -318,10 +318,12 @@ public class IntegrationTest {
 
     @Test
     public void HideEmptyStatingStreamsProjectTest() throws Exception{
+
         rule.jenkins.disableSecurity();	
         rule.jenkins.save();	
 
         WorkflowMultiBranchProject multiProject = rule.jenkins.createProject(WorkflowMultiBranchProject.class, "demo");
+
 
         client = AccurevTestExtensions.createClientAtDir(multiProject.getComputationDir(), url, username, password);
         String depot = AccurevTestExtensions.generateString(10);
