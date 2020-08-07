@@ -16,12 +16,13 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class BuildItemsDiscoveryTrait extends AccurevSCMExtensionTrait<BuildItemsDiscovery> {
 
     @DataBoundConstructor
-    public BuildItemsDiscoveryTrait(boolean stream, boolean workspace, boolean snapshot, boolean passThrough, boolean gatedStream) {
+    public BuildItemsDiscoveryTrait(boolean stream, boolean workspace, boolean snapshot, boolean passThrough, boolean stagingStream, boolean gatedStream) {
         super(new BuildItemsDiscovery());
         this.setStream(stream);
         this.setWorkspace(workspace);
         this.setSnapshot(snapshot);
         this.setPassThrough(passThrough);
+        this.setStagingStream(stagingStream);
         this.setGatedStream(gatedStream);
     }
 
@@ -33,6 +34,7 @@ public class BuildItemsDiscoveryTrait extends AccurevSCMExtensionTrait<BuildItem
             ctx.wantSnapshots(isSnapshot());
             ctx.wantWorkspaces(isWorkspace());
             ctx.wantPassThroughs(isPassThrough());
+            ctx.wantStagingStreams(isStagingStream());
             ctx.wantGatedStreams(isGatedStream());
         }
     }
@@ -67,6 +69,14 @@ public class BuildItemsDiscoveryTrait extends AccurevSCMExtensionTrait<BuildItem
 
     public void setPassThrough(boolean passThrough) {
         this.getExtension().setPassThrough(passThrough);
+    }
+
+    public boolean isStagingStream() {
+        return this.getExtension().isStagingStream();
+    }
+
+    public void setStagingStream(boolean stagingStream) {
+        this.getExtension().setStagingStream(stagingStream);
     }
 
     public boolean isGatedStream() {

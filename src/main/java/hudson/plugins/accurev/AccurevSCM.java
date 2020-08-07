@@ -370,19 +370,18 @@ public class AccurevSCM extends SCM implements Serializable {
         */
         Collection<AccurevTransaction> candidates = Collections.emptyList();
         final SCMRevisionAction sra = build.getAction(SCMRevisionAction.class);
+        final CauseAction ca = build.getAction(CauseAction.class);
+
         if(candidates.isEmpty()) {
-            if (sra != null) {
+            if (sra != null && ca.findCause(Cause.UserIdCause.class) == null) {
                 AccurevSCMHead head = (AccurevSCMHead) sra.getRevision().getHead();
-                System.out.println("calculation revison for: " + head.getName() + " at transaction: " + head.getHash());
+                System.out.println("calculation revision for: " + head.getName() + " at transaction: " + head.getHash());
                 candidates = getBuildChooser().getCandidateTransactions(false, getSingleStream(), ac , listener, buildData, head.getHash());
+            } else {
+                final String singleStream = environment.expand( getSingleStream() );
+                candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
+                listener.getLogger().println(candidates.isEmpty());
             }
-        }
-
-        if(candidates.isEmpty()){
-            final String singleStream = environment.expand( getSingleStream() );
-
-            candidates = getBuildChooser().getCandidateTransactions(false, singleStream, ac, listener, buildData);
-            listener.getLogger().println(candidates.isEmpty());
         }
 
         Build transToBuild;

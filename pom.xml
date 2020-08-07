@@ -10,7 +10,7 @@
     </parent>
     <groupId>jenkins-plugins</groupId>
     <artifactId>accurev-scm</artifactId>
-    <version>1.5-SNAPSHOT</version>
+    <version>1.6-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <properties>
         <jenkins.version>2.222.1</jenkins.version>

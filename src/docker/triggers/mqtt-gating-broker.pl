@@ -97,7 +97,7 @@ sub mqttListener {
                     if (not looks_like_number($principalAndComment)) {
                         $log->msg(2, "promoting $principalAndComment to $staging_stream");
                         my ($out, $err, $ext) = capture {
-                            if($issue != 0){
+                            if(defined $issue && $issue ne 0){
                                 $promote_result = system("accurev promote -s \"$staging_stream\" -d -t $transaction_num -c \"$principalAndComment\" -I $issue");
                             } else {
                                 $promote_result = system("accurev promote -s \"$staging_stream\" -d -t $transaction_num -c \"$principalAndComment\"");
