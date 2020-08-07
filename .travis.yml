@@ -19,4 +19,5 @@ deploy:
     - target/accurev-scm.hpi
     - target/accurev-scm.jar
   skip_cleanup: true
+  overwrite: true
   draft: true
