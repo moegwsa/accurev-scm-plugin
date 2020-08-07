@@ -28,6 +28,10 @@ public abstract class BuildChooser implements ExtensionPoint, Describable<BuildC
         throw new UnsupportedOperationException("getCandidateRevisions method must be overridden");
     }
 
+    public Collection<AccurevTransaction> getCandidateTransactions(boolean isPollCall, String streamSpec, AccurevClient ac, TaskListener listener, BuildData data, long bound){
+        throw new UnsupportedOperationException("getCandidateRevisions method must be overridden");
+    }
+
     @Override
     @SuppressFBWarnings(value="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", justification="Jenkins.getInstance() is not null")
     public BuildChooserDescriptor getDescriptor() {
